@@ -1,0 +1,26 @@
+#cloud-config
+package_update: true
+package_upgrade: false
+packages:
+  - docker.io
+  - curl
+runcmd:
+  - [ bash, -lc, "set -e; echo 'Configuring docker group'" ]
+  - [ bash, -lc, "getent group docker || sudo groupadd docker" ]
+  - [ bash, -lc, "sudo usermod -aG docker opc" ]
+  - [ bash, -lc, "sudo systemctl enable --now docker" ]
+  - [ bash, -lc, "echo 'Installing Docker Compose v2 plugin (aarch64)'" ]
+  - [ bash, -lc, "mkdir -p /home/opc/.docker/cli-plugins" ]
+  - [ bash, -lc, "ARCH=\$(uname -m); [ \"$ARCH\" = aarch64 ] || ARCH=x86_64; curl -fsSL https://github.com/docker/compose/releases/download/v2.24.7/docker-compose-linux-$ARCH -o /home/opc/.docker/cli-plugins/docker-compose" ]
+  - [ bash, -lc, "chmod +x /home/opc/.docker/cli-plugins/docker-compose" ]
+  - [ bash, -lc, "chown -R opc:opc /home/opc/.docker" ]
+  - [ bash, -lc, "echo 'Setting NOPASSWD for opc'" ]
+  - [ bash, -lc, "echo 'opc ALL=(ALL) NOPASSWD:ALL' | sudo tee /etc/sudoers.d/99-opc-nopasswd > /dev/null" ]
+  - [ bash, -lc, "sudo chmod 440 /etc/sudoers.d/99-opc-nopasswd" ]
+  - [ bash, -lc, "mkdir -p /home/opc/workspace" ]
+  - [ bash, -lc, "echo 'Bootstrap complete'" ]
+users:
+  - name: opc
+    groups: [ sudo, docker ]
+    shell: /bin/bash
+    sudo: ALL=(ALL) NOPASSWD:ALL

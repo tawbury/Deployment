@@ -73,7 +73,9 @@ mcp-cli/
 # -----------------------------------------------------------------------------
 .ai/
 .cursorrules
+.cursorignore
 .windsurfrules
+.windsurfignore
 .claude/
 .github/copilot-instructions.md
 CLAUDE.md

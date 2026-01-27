@@ -1,0 +1,125 @@
+# Observer System Alerting Rules
+groups:
+  - name: observer_system_alerts
+    interval: 30s
+    rules:
+
+      - alert: HighAPIErrorRate
+        expr: (rate(observer_api_errors_total[5m]) / rate(observer_api_requests_total[5m])) > 0.05
+        for: 5m
+        labels:
+          severity: critical
+          service: observer
+        annotations:
+          summary: "High API Error Rate"
+          description: "API error rate exceeds 5%"
+
+      - alert: SystemDowntime
+        expr: observer_system_uptime_seconds < 60
+        for: 2m
+        labels:
+          severity: critical
+          service: observer
+        annotations:
+          summary: "System Downtime"
+          description: "System has been running for less than 1 minute"
+
+      - alert: UniverseSizeAnomaly
+        expr: abs(observer_universe_size - avg_over_time(observer_universe_size[1h])) > avg_over_time(observer_universe_size[1h]) * 0.5
+        for: 10m
+        labels:
+          severity: warning
+          service: observer
+        annotations:
+          summary: "Universe Size Anomaly"
+          description: "Universe size deviates significantly from average"
+
+      - alert: RapidUniverseExpansion
+        expr: rate(observer_universe_created_total[5m]) > 100
+        for: 5m
+        labels:
+          severity: warning
+          service: observer
+        annotations:
+          summary: "Rapid Universe Expansion"
+          description: "Universe expansion rate exceeds 100 symbols/sec"
+
+      - alert: TrackACollectionDelayed
+        expr: histogram_quantile(0.99, rate(observer_track_a_collection_duration_seconds_bucket[5m])) > 1.0
+        for: 5m
+        labels:
+          severity: warning
+          service: observer
+        annotations:
+          summary: "Track A Collection Delayed"
+          description: "99th percentile latency exceeds 1 second"
+
+      - alert: TrackBSlotUtilizationHigh
+        expr: observer_track_b_slot_utilization > 0.9
+        for: 5m
+        labels:
+          severity: warning
+          service: observer
+        annotations:
+          summary: "Track B Slot Utilization High"
+          description: "Slot utilization exceeds 90%"
+
+      - alert: TokenRefreshFailure
+        expr: rate(observer_token_refresh_failures_total[5m]) > 0
+        for: 2m
+        labels:
+          severity: critical
+          service: observer
+        annotations:
+          summary: "Token Refresh Failure"
+          description: "Token refresh failures detected"
+
+      - alert: GapDetectionIssue
+        expr: rate(observer_gap_detection_failures_total[5m]) > 0
+        for: 5m
+        labels:
+          severity: warning
+          service: observer
+        annotations:
+          summary: "Gap Detection Issue"
+          description: "Gap detection failures detected"
+
+      - alert: RateLimitThrottling
+        expr: rate(observer_rate_limit_throttle_count[5m]) > 10
+        for: 5m
+        labels:
+          severity: warning
+          service: observer
+        annotations:
+          summary: "Rate Limit Throttling"
+          description: "Rate limit throttling is occurring frequently"
+
+      - alert: DatabaseConnectionFailure
+        expr: observer_db_connection_errors_total > 0
+        for: 2m
+        labels:
+          severity: critical
+          service: observer
+        annotations:
+          summary: "Database Connection Failure"
+          description: "Database connection errors detected"
+
+      - alert: HighMemoryUsage
+        expr: observer_memory_usage_bytes / observer_memory_limit_bytes > 0.8
+        for: 5m
+        labels:
+          severity: warning
+          service: observer
+        annotations:
+          summary: "High Memory Usage"
+          description: "Memory usage exceeds 80%"
+
+      - alert: HighCPUUsage
+        expr: observer_cpu_usage_percent > 80
+        for: 5m
+        labels:
+          severity: warning
+          service: observer
+        annotations:
+          summary: "High CPU Usage"
+          description: "CPU usage exceeds 80%"
