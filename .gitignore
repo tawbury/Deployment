@@ -1,0 +1,144 @@
+# -----------------------------------------------------------------------------
+# Secrets & Security
+# -----------------------------------------------------------------------------
+*.env
+.env.*
+!*.env.*.example
+!.env.prod.example
+!**/env.template
+!**/.env.template
+
+**/.env
+**/.env.*
+**/secrets/
+secrets/
+secrets.*
+app/obs_deploy/secrets/
+
+infra/_shared/secrets/*
+!infra/_shared/secrets/.gitignore
+!infra/_shared/secrets/README.md
+
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+api_keys.txt
+credentials.json
+
+# -----------------------------------------------------------------------------
+# OS & Editor
+# -----------------------------------------------------------------------------
+.DS_Store
+Thumbs.db
+Desktop.ini
+*.bak
+*.swp
+*.swo
+*.tmp
+*.temp
+~$*
+
+# -----------------------------------------------------------------------------
+# Python
+# -----------------------------------------------------------------------------
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.pyc
+*.pdb
+*.egg-info/
+.eggs/
+*.egg
+*.log
+*.sqlite3
+*.db
+.venv/
+venv/
+.coverage
+htmlcov/
+.pytest_cache/
+
+# -----------------------------------------------------------------------------
+# Node / MCP (mcp-cli)
+# -----------------------------------------------------------------------------
+mcp-cli/node_modules/
+mcp-cli/dist/
+
+# -----------------------------------------------------------------------------
+# AI / IDE generated (optional: remove to track)
+# -----------------------------------------------------------------------------
+.ai/
+.cursorrules
+.windsurfrules
+.claude/
+.github/copilot-instructions.md
+CLAUDE.md
+
+# -----------------------------------------------------------------------------
+# Project: app/observer
+# -----------------------------------------------------------------------------
+app/observer/config/observer/**/*.jsonl
+app/observer/config/system/**/*.jsonl
+app/observer/config/universe/*.json
+app/observer/config/symbols/kr_all_symbols.*
+app/observer/MANIFEST.txt
+app/observer/start_observer.sh
+app/observer/config/observer/
+app/observer/config/symbols/kr_all_symbols.txt
+app/observer/config/symbols/kr_all_symbols.csv
+app/observer/app/config/backups/archives/
+app/observer/app/config/backups/manifests/
+app/observer/data/
+app/observer/logs/
+app/observer/config/universe/*.json
+app/observer/*.tar
+app/observer/*.tar.gz
+app/observer/*.tar.bak
+
+# -----------------------------------------------------------------------------
+# Project: infra & ops
+# -----------------------------------------------------------------------------
+infra/output/
+ops/run_records/*.log
+
+# -----------------------------------------------------------------------------
+# Project: build/deploy artifacts
+# -----------------------------------------------------------------------------
+app/*.tar.gz
+observer-image.tar
+observer-compose-*.tar.gz
+obs_deploy_package.tar.gz
+
+# -----------------------------------------------------------------------------
+# Terraform
+# -----------------------------------------------------------------------------
+*.tfstate
+*.tfstate.*
+.terraform/
+.terraform.lock.hcl
+crash.log
+terraform.tfvars
+*.tfvars
+
+# -----------------------------------------------------------------------------
+# Docker
+# -----------------------------------------------------------------------------
+*.pid
+docker-compose.override.yml
+
+# -----------------------------------------------------------------------------
+# Dev tools
+# -----------------------------------------------------------------------------
+.vscode/
+.history/
+
+# -----------------------------------------------------------------------------
+# Backups
+# -----------------------------------------------------------------------------
+*.backup
+backup/
+backups/
+.github/workflows/*.backup
