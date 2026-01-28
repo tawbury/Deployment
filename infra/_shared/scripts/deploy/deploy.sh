@@ -92,10 +92,9 @@ resolve_image() {
 # SSH wrapper: run remote command (key from env)
 # ------------------------------------------------------------------------------
 run_ssh() {
-  local key_file=""
   if [ -n "${SSH_KEY:-}" ]; then
+    local key_file
     key_file=$(mktemp)
-    trap 'rm -f "$key_file"' EXIT
     if echo "$SSH_KEY" | base64 -d >"$key_file" 2>/dev/null; then
       :
     else
@@ -104,9 +103,32 @@ run_ssh() {
     chmod 600 "$key_file"
     ssh -o StrictHostKeyChecking=accept-new -o UserKnownHostsFile=/dev/null \
       -i "$key_file" -p "${SSH_PORT}" "${SSH_USER}@${SSH_HOST}" "$@"
+    local exit_code=$?
+    rm -f "$key_file"
+    return $exit_code
   else
     ssh -o StrictHostKeyChecking=accept-new -o UserKnownHostsFile=/dev/null \
       -p "${SSH_PORT}" "${SSH_USER}@${SSH_HOST}" "$@"
+  fi
+}
+
+# ------------------------------------------------------------------------------
+# Ensure GHCR authentication on remote (for private images)
+# ------------------------------------------------------------------------------
+ensure_remote_ghcr_auth() {
+  log_info "Checking GHCR authentication on remote host"
+  # Test if we can pull from GHCR (will fail if private and not logged in)
+  if run_ssh "sudo docker pull ghcr.io/tawbury/observer:latest >/dev/null 2>&1"; then
+    log_info "GHCR auth OK or image is public"
+    return 0
+  fi
+  
+  # If GHCR_TOKEN env is set, use it to login on remote
+  if [ -n "${GHCR_TOKEN:-}" ]; then
+    log_info "Logging in to GHCR on remote host"
+    run_ssh "echo '${GHCR_TOKEN}' | sudo docker login ghcr.io -u tawbury --password-stdin"
+  else
+    log_warn "GHCR pull may fail if image is private and no GHCR_TOKEN provided"
   fi
 }
 
@@ -172,6 +194,7 @@ main() {
     exit 1
   fi
 
+  ensure_remote_ghcr_auth
   deploy_remote
   sleep 3
   health_check_remote || log_warn "Health check failed or skipped."

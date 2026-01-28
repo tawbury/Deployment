@@ -120,10 +120,11 @@ jobs:
           SSH_USER: ${{ secrets.SSH_USER }}
           SSH_PORT: ${{ secrets.SSH_PORT }}
           DEPLOY_DIR: ${{ secrets.DEPLOY_DIR }}
+          GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
         run: |
           chmod +x infra/_shared/scripts/deploy/deploy.sh
           ./infra/_shared/scripts/deploy/deploy.sh
-        # Required secrets: SSH_HOST, SSH_KEY. Optional: SSH_USER, SSH_PORT, DEPLOY_DIR
+        # Required secrets: SSH_HOST, SSH_KEY, GHCR_TOKEN. Optional: SSH_USER, SSH_PORT, DEPLOY_DIR
 
       - name: Record deployed tag
         if: success()
