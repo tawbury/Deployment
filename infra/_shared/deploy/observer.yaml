@@ -1,0 +1,37 @@
+# Declarative deployment spec for Observer service.
+# Designed to be Kubernetes-like for future kubectl apply migration.
+# Parsed by infra/_shared/scripts/deploy/deploy.sh for VM (OCI/AWS/GCP) SSH deployment.
+# Unified spec: not tied to a specific cloud; use with any VM via SSH.
+
+apiVersion: deploy/v1
+kind: Service
+
+metadata:
+  name: observer
+  # Optional: namespace for future K8s compatibility
+  # namespace: default
+
+spec:
+  # Container image (registry/name:tag)
+  image: ghcr.io/tawbury/observer
+  # Tag override; if empty, workflow passes IMAGE_TAG from CI/build
+  tag: ""
+
+  # Host port mapping: "hostPort:containerPort" or single port for both
+  port: 8000
+
+  # Number of container replicas on this VM (1 = single instance)
+  replicas: 1
+
+  # Restart policy: always | unless-stopped | on-failure
+  restart: unless-stopped
+
+  # Optional: extra env file path on remote host (relative to DEPLOY_DIR)
+  # envFile: .env
+
+  # Optional: docker run extra args (e.g. -e KEY=val, --memory=1g)
+  # extraArgs: ""
+
+  # Health check endpoint for post-deploy validation
+  healthPath: /health
+  healthPort: 8000

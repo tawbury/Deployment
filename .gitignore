@@ -145,3 +145,18 @@ docker-compose.override.yml
 backup/
 backups/
 .github/workflows/*.backup
+
+# -----------------------------------------------------------------------------
+# code-workspace
+# -----------------------------------------------------------------------------
+*.code-workspace
+*.code-workspace.backup
+*.code-workspace.bak
+*.code-workspace.old
+*.code-workspace.old.bak
+*.code-workspace.old.bak.zip
+*.code-workspace.old.bak.zip.old
+*.code-workspace.old.bak.zip.old.bak
+*.code-workspace.old.bak.zip.old.bak.zip
+*.code-workspace.old.bak.zip.old.bak.zip.old
+*.code-workspace.old.bak.zip.old.bak.zip.old.bak

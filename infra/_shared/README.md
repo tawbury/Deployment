@@ -2,6 +2,13 @@
 
 이 디렉토리는 모든 환경(로컬 개발, OCI 배포, 향후 Kubernetes 등)에서 공통으로 사용되는 인프라 리소스를 포함합니다.
 
+## 🔀 배포 vs 프로비저닝 분리 원칙
+
+- **배포(앱 컨테이너 띄우기)**: 통합 운영. `_shared/deploy/` 스펙 + `_shared/scripts/deploy/deploy.sh` 하나로 OCI/AWS/GCP/ARM 등 **어떤 VM이든 SSH만 되면 동일하게** 배포합니다. 따라서 arm/aws/gcp/oci 별로 배포 스크립트·YAML을 나눌 필요 없습니다.
+- **프로비저닝(VM 생성·네트워크·cloud-init 등)**: 클라우드마다 API/도구가 다르므로 `infra/oci_deploy/`, `infra/aws_deploy/` 등 **클라우드별 폴더**에만 둡니다. 예: OCI 인스턴스 런치, cloud-init, OCI CLI 스크립트.
+
+정리: **배포는 _shared만 사용하고, 클라우드별 폴더는 VM 만들기·부트스트랩 전용**으로 두면 됩니다.
+
 ## 📁 디렉토리 구조
 
 ```
@@ -13,6 +20,9 @@ infra/_shared/
 │   ├── grafana_dashboard.json
 │   ├── grafana_datasources.yml
 │   └── docker-compose.yml
+│
+├── deploy/            # 선언형 배포 스펙 (통합 운영, 클라우드 비종속)
+│   └── observer.yaml
 │
 ├── migrations/         # 데이터베이스 마이그레이션 스크립트
 │   ├── 001_create_scalp_tables.sql

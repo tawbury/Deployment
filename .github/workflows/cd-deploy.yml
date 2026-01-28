@@ -1,0 +1,70 @@
+# CD workflow: deploy Observer to VM via declarative spec (infra/_shared/deploy/observer.yaml).
+# Triggers: workflow_dispatch or on successful CI completion (workflow_run).
+# Designed for future replacement by kubectl apply.
+
+name: CD Deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: "Image tag to deploy (e.g. build-20260128-123456). Leave empty to use latest from artifact/conclusion."
+        required: false
+        default: ""
+      skip_health:
+        description: "Skip post-deploy health check"
+        required: false
+        type: boolean
+        default: false
+  workflow_run:
+    workflows: ["CI"]   # Trigger when CI workflow completes; rename to your actual CI workflow name
+    types: [completed]
+    branches: [master, main]
+
+env:
+  DEPLOY_SPEC: infra/_shared/deploy/observer.yaml
+
+jobs:
+  deploy:
+    name: Deploy to VM
+    runs-on: ubuntu-latest
+    # Only run when triggered manually or when CI succeeded
+    if: |
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success')
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Resolve image tag
+        id: tag
+        run: |
+          if [ -n "${{ github.event.inputs.image_tag }}" ]; then
+            echo "tag=${{ github.event.inputs.image_tag }}" >> $GITHUB_OUTPUT
+          elif [ "${{ github.event_name }}" = "workflow_run" ] && [ -n "${{ github.event.workflow_run.head_sha }}" ]; then
+            SHORT_SHA="$(echo "${{ github.event.workflow_run.head_sha }}" | cut -c1-7)"
+            echo "tag=build-$(date +%Y%m%d)-${SHORT_SHA}" >> $GITHUB_OUTPUT
+          else
+            echo "tag=latest" >> $GITHUB_OUTPUT
+          fi
+          echo "Resolved IMAGE_TAG: $(grep '^tag=' $GITHUB_OUTPUT | cut -d= -f2-)"
+
+      - name: Deploy via SSH
+        env:
+          DEPLOY_SPEC: ${{ env.DEPLOY_SPEC }}
+          IMAGE_TAG: ${{ steps.tag.outputs.tag }}
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_KEY: ${{ secrets.SSH_KEY }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+          SSH_PORT: ${{ secrets.SSH_PORT }}
+          DEPLOY_DIR: ${{ secrets.DEPLOY_DIR }}
+        run: |
+          chmod +x infra/_shared/scripts/deploy/deploy.sh
+          ./infra/_shared/scripts/deploy/deploy.sh
+        # Required secrets: SSH_HOST, SSH_KEY. Optional: SSH_USER, SSH_PORT, DEPLOY_DIR
+
+      - name: Post-deploy health check (optional)
+        if: success() && github.event.inputs.skip_health != 'true'
+        run: |
+          echo "Health check is performed inside scripts/deploy.sh on the remote host."
+          echo "For external checks, configure a job that curls your public endpoint."
