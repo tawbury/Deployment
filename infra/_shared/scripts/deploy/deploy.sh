@@ -196,6 +196,9 @@ main() {
 
   ensure_remote_ghcr_auth
   deploy_remote
+  # Persist deployed image/tag info on remote host for later inspection
+  log_info "Recording deployed image on remote host: $FULL_IMAGE -> ${REMOTE_DEPLOY_DIR}/deployed_tag"
+  run_ssh "sudo mkdir -p '${REMOTE_DEPLOY_DIR}' && echo '${FULL_IMAGE}' | sudo tee '${REMOTE_DEPLOY_DIR}/deployed_tag' >/dev/null"
   sleep 3
   health_check_remote || log_warn "Health check failed or skipped."
   log_info "Deploy finished: $FULL_IMAGE on $SSH_HOST"
