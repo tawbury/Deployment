@@ -1,0 +1,22 @@
+# Prometheus Configuration for Observer System
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    monitor: 'observer-system'
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: ['observer-alertmanager:9093']
+
+rule_files:
+  - 'prometheus_alerting_rules.yaml'
+
+scrape_configs:
+  - job_name: 'observer'
+    static_configs:
+      - targets: ['host.docker.internal:8000']
+    scrape_interval: 30s
+    scrape_timeout: 10s
+    metrics_path: '/metrics'

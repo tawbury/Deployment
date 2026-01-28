@@ -37,8 +37,8 @@ app/oci_deploy/
 - `app/observer/requirements.txt` - Python 의존성
 - `app/observer/Dockerfile` - 컨테이너 이미지
 - `app/observer/env.template` - 환경 변수 템플릿
-- `infra/_shared/scripts/env/setup_env_secure.sh` - 환경 설정 스크립트
-- `infra/_shared/scripts/migrate/migrate.sh` - DB 마이그레이션 실행 스크립트
+- `scripts/deploy/setup_env_secure.sh` - 환경 설정 스크립트
+- `scripts/deploy/migrate.sh` - DB 마이그레이션 실행 스크립트
 
 ---
 
@@ -131,7 +131,7 @@ export DB_PASSWORD="<secure-password>"  # .env에 저장
 
 ```bash
 # 로컬에서 실행 (OCI로 배포 전)
-./infra/_shared/scripts/migrate/migrate.sh \
+scripts/deploy/migrate.sh \
   --host ${DB_HOST} \
   --port ${DB_PORT} \
   --database ${DB_NAME} \

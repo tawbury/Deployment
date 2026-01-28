@@ -1,0 +1,478 @@
+{
+  "dashboard": {
+    "title": "Observer System Monitoring Dashboard",
+    "timezone": "Asia/Seoul",
+    "panels": [
+      {
+        "type": "stat",
+        "title": "Universe Size",
+        "datasource": "Prometheus",
+        "gridPos": {
+          "x": 0,
+          "y": 0,
+          "w": 6,
+          "h": 8
+        },
+        "targets": [
+          {
+            "expr": "observer_universe_size",
+            "legendFormat": "Current Size",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "graphMode": "area",
+          "orientation": "auto",
+          "textMode": "auto",
+          "colorMode": "value",
+          "unit": "short"
+        }
+      },
+      {
+        "type": "timeseries",
+        "title": "Universe Operations Rate",
+        "datasource": "Prometheus",
+        "gridPos": {
+          "x": 6,
+          "y": 0,
+          "w": 12,
+          "h": 8
+        },
+        "targets": [
+          {
+            "expr": "rate(observer_universe_created_total[5m])",
+            "legendFormat": "Created/sec",
+            "refId": "A"
+          },
+          {
+            "expr": "rate(observer_universe_deleted_total[5m])",
+            "legendFormat": "Deleted/sec",
+            "refId": "B"
+          }
+        ]
+      },
+      {
+        "type": "stat",
+        "title": "Track A Snapshots",
+        "datasource": "Prometheus",
+        "gridPos": {
+          "x": 0,
+          "y": 8,
+          "w": 6,
+          "h": 8
+        },
+        "targets": [
+          {
+            "expr": "observer_track_a_snapshots_total",
+            "legendFormat": "Total Snapshots",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "graphMode": "area",
+          "orientation": "auto",
+          "textMode": "auto",
+          "colorMode": "value"
+        }
+      },
+      {
+        "type": "histogram",
+        "title": "Track A Collection Duration",
+        "datasource": "Prometheus",
+        "gridPos": {
+          "x": 6,
+          "y": 8,
+          "w": 12,
+          "h": 8
+        },
+        "targets": [
+          {
+            "expr": "rate(observer_track_a_collection_duration_seconds_bucket[5m])",
+            "legendFormat": "{{le}}",
+            "refId": "A"
+          }
+        ]
+      },
+      {
+        "type": "stat",
+        "title": "Track B Slot Utilization",
+        "datasource": "Prometheus",
+        "gridPos": {
+          "x": 0,
+          "y": 16,
+          "w": 6,
+          "h": 8
+        },
+        "targets": [
+          {
+            "expr": "observer_track_b_slots_allocated / observer_track_b_slots_total",
+            "legendFormat": "Utilization",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "graphMode": "area",
+          "colorMode": "value",
+          "unit": "percentunit"
+        }
+      },
+      {
+        "type": "timeseries",
+        "title": "Track B Slots Status",
+        "datasource": "Prometheus",
+        "gridPos": {
+          "x": 6,
+          "y": 16,
+          "w": 12,
+          "h": 8
+        },
+        "targets": [
+          {
+            "expr": "observer_track_b_slots_allocated",
+            "legendFormat": "Allocated",
+            "refId": "A"
+          },
+          {
+            "expr": "observer_track_b_slots_total - observer_track_b_slots_allocated",
+            "legendFormat": "Available",
+            "refId": "B"
+          }
+        ]
+      },
+      {
+        "type": "timeseries",
+        "title": "Track B Triggers and Collection Speed",
+        "datasource": "Prometheus",
+        "gridPos": {
+          "x": 0,
+          "y": 24,
+          "w": 18,
+          "h": 8
+        },
+        "targets": [
+          {
+            "expr": "rate(observer_track_b_triggers_total[5m])",
+            "legendFormat": "Triggers/sec",
+            "refId": "A"
+          },
+          {
+            "expr": "observer_track_b_collection_speed",
+            "legendFormat": "Collection Speed (items/sec)",
+            "refId": "B"
+          }
+        ]
+      },
+      {
+        "type": "stat",
+        "title": "Gaps Detected (Total)",
+        "datasource": "Prometheus",
+        "gridPos": {
+          "x": 0,
+          "y": 32,
+          "w": 6,
+          "h": 8
+        },
+        "targets": [
+          {
+            "expr": "observer_gaps_detected_total",
+            "legendFormat": "Total Gaps",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "graphMode": "area",
+          "colorMode": "value"
+        }
+      },
+      {
+        "type": "piechart",
+        "title": "Gaps by Severity Distribution",
+        "datasource": "Prometheus",
+        "gridPos": {
+          "x": 6,
+          "y": 32,
+          "w": 6,
+          "h": 8
+        },
+        "targets": [
+          {
+            "expr": "observer_gaps_low_total",
+            "legendFormat": "Low Severity",
+            "refId": "A"
+          },
+          {
+            "expr": "observer_gaps_medium_total",
+            "legendFormat": "Medium Severity",
+            "refId": "B"
+          },
+          {
+            "expr": "observer_gaps_high_total",
+            "legendFormat": "High Severity",
+            "refId": "C"
+          }
+        ]
+      },
+      {
+        "type": "timeseries",
+        "title": "Gap Detection Duration (Histogram)",
+        "datasource": "Prometheus",
+        "gridPos": {
+          "x": 12,
+          "y": 32,
+          "w": 6,
+          "h": 8
+        },
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.99, rate(observer_gap_detection_duration_seconds_bucket[5m]))",
+            "legendFormat": "p99",
+            "refId": "A"
+          },
+          {
+            "expr": "histogram_quantile(0.95, rate(observer_gap_detection_duration_seconds_bucket[5m]))",
+            "legendFormat": "p95",
+            "refId": "B"
+          }
+        ]
+      },
+      {
+        "type": "stat",
+        "title": "Rate Limit Tokens Used",
+        "datasource": "Prometheus",
+        "gridPos": {
+          "x": 0,
+          "y": 40,
+          "w": 6,
+          "h": 8
+        },
+        "targets": [
+          {
+            "expr": "rate(observer_rate_limit_tokens_total[5m])",
+            "legendFormat": "Tokens/sec",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "graphMode": "area",
+          "colorMode": "value"
+        }
+      },
+      {
+        "type": "timeseries",
+        "title": "Rate Limit Delays",
+        "datasource": "Prometheus",
+        "gridPos": {
+          "x": 6,
+          "y": 40,
+          "w": 12,
+          "h": 8
+        },
+        "targets": [
+          {
+            "expr": "rate(observer_rate_limit_delays_total[5m])",
+            "legendFormat": "Delays/sec",
+            "refId": "A"
+          },
+          {
+            "expr": "histogram_quantile(0.99, rate(observer_rate_limit_delay_duration_seconds_bucket[5m]))",
+            "legendFormat": "p99 Delay (ms)",
+            "refId": "B"
+          }
+        ]
+      },
+      {
+        "type": "stat",
+        "title": "API Requests/sec",
+        "datasource": "Prometheus",
+        "gridPos": {
+          "x": 0,
+          "y": 48,
+          "w": 6,
+          "h": 8
+        },
+        "targets": [
+          {
+            "expr": "rate(observer_api_requests_total[5m])",
+            "legendFormat": "Requests/sec",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "graphMode": "area",
+          "colorMode": "value"
+        }
+      },
+      {
+        "type": "stat",
+        "title": "API Error Rate",
+        "datasource": "Prometheus",
+        "gridPos": {
+          "x": 6,
+          "y": 48,
+          "w": 6,
+          "h": 8
+        },
+        "targets": [
+          {
+            "expr": "rate(observer_api_errors_total[5m]) / rate(observer_api_requests_total[5m])",
+            "legendFormat": "Error Rate",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "graphMode": "area",
+          "colorMode": "value",
+          "unit": "percentunit"
+        }
+      },
+      {
+        "type": "timeseries",
+        "title": "API Request Latency",
+        "datasource": "Prometheus",
+        "gridPos": {
+          "x": 12,
+          "y": 48,
+          "w": 6,
+          "h": 8
+        },
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.99, rate(observer_api_request_duration_seconds_bucket[5m]))",
+            "legendFormat": "p99",
+            "refId": "A"
+          },
+          {
+            "expr": "histogram_quantile(0.95, rate(observer_api_request_duration_seconds_bucket[5m]))",
+            "legendFormat": "p95",
+            "refId": "B"
+          },
+          {
+            "expr": "histogram_quantile(0.50, rate(observer_api_request_duration_seconds_bucket[5m]))",
+            "legendFormat": "p50",
+            "refId": "C"
+          }
+        ]
+      },
+      {
+        "type": "stat",
+        "title": "Token Validity (seconds)",
+        "datasource": "Prometheus",
+        "gridPos": {
+          "x": 0,
+          "y": 56,
+          "w": 6,
+          "h": 8
+        },
+        "targets": [
+          {
+            "expr": "observer_token_validity_seconds",
+            "legendFormat": "Seconds Remaining",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "graphMode": "area",
+          "colorMode": "value",
+          "unit": "short",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": 0
+              },
+              {
+                "color": "yellow",
+                "value": 3600
+              },
+              {
+                "color": "green",
+                "value": 86400
+              }
+            ]
+          }
+        }
+      },
+      {
+        "type": "timeseries",
+        "title": "Token Refresh Rate",
+        "datasource": "Prometheus",
+        "gridPos": {
+          "x": 6,
+          "y": 56,
+          "w": 12,
+          "h": 8
+        },
+        "targets": [
+          {
+            "expr": "rate(observer_token_refreshes_total[1h])",
+            "legendFormat": "Refreshes/hour",
+            "refId": "A"
+          }
+        ]
+      },
+      {
+        "type": "stat",
+        "title": "System Uptime",
+        "datasource": "Prometheus",
+        "gridPos": {
+          "x": 0,
+          "y": 64,
+          "w": 8,
+          "h": 6
+        },
+        "targets": [
+          {
+            "expr": "observer_system_uptime_seconds",
+            "legendFormat": "Uptime",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "graphMode": "area",
+          "colorMode": "value",
+          "unit": "s"
+        }
+      },
+      {
+        "type": "stat",
+        "title": "System Health",
+        "datasource": "Prometheus",
+        "gridPos": {
+          "x": 8,
+          "y": 64,
+          "w": 10,
+          "h": 6
+        },
+        "targets": [
+          {
+            "expr": "(observer_api_errors_total / observer_api_requests_total) < 0.05",
+            "legendFormat": "Healthy",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "colorMode": "value",
+          "graphMode": "area",
+          "unit": "percentunit"
+        }
+      }
+    ],
+    "refresh": "30s",
+    "time": {
+      "from": "now-6h",
+      "to": "now"
+    },
+    "templating": {
+      "list": []
+    },
+    "annotations": {
+      "list": []
+    },
+    "schemaVersion": 38,
+    "version": 1,
+    "gnetId": null,
+    "uid": "observer-system-monitoring"
+  },
+  "overwrite": true
+}

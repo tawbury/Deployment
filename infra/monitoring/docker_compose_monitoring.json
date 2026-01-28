@@ -1,0 +1,62 @@
+{
+  "version": "3.9",
+  "services": {
+    "prometheus": {
+      "image": "prom/prometheus:latest",
+      "ports": [
+        "9090:9090"
+      ],
+      "volumes": [
+        "./prometheus.yml:/etc/prometheus/prometheus.yml",
+        "./prometheus_alerting_rules.yaml:/etc/prometheus/rules.yaml"
+      ],
+      "command": [
+        "--config.file=/etc/prometheus/prometheus.yml",
+        "--storage.tsdb.path=/prometheus",
+        "--web.console.libraries=/usr/share/prometheus/console_libraries",
+        "--web.console.templates=/usr/share/prometheus/consoles"
+      ],
+      "networks": [
+        "monitoring"
+      ]
+    },
+    "grafana": {
+      "image": "grafana/grafana:latest",
+      "ports": [
+        "3000:3000"
+      ],
+      "environment": {
+        "GF_SECURITY_ADMIN_PASSWORD": "admin",
+        "GF_PATHS_PROVISIONING": "/etc/grafana/provisioning",
+        "GF_PATHS_DASHBOARDS": "/etc/grafana/provisioning/dashboards"
+      },
+      "volumes": [
+        "./grafana_dashboard.json:/etc/grafana/provisioning/dashboards/observer.json",
+        "./grafana_datasources.yml:/etc/grafana/provisioning/datasources/datasources.yml"
+      ],
+      "depends_on": [
+        "prometheus"
+      ],
+      "networks": [
+        "monitoring"
+      ]
+    },
+    "alertmanager": {
+      "image": "prom/alertmanager:latest",
+      "ports": [
+        "9093:9093"
+      ],
+      "volumes": [
+        "./alertmanager.yml:/etc/alertmanager/alertmanager.yml"
+      ],
+      "networks": [
+        "monitoring"
+      ]
+    }
+  },
+  "networks": {
+    "monitoring": {
+      "driver": "bridge"
+    }
+  }
+}

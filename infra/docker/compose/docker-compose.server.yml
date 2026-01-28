@@ -1,0 +1,63 @@
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: observer-postgres
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=observer_db_pwd
+      - POSTGRES_DB=observer
+    volumes:
+      - ../../observer/data/postgres:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  observer:
+    image: ghcr.io/tawbury/observer:${IMAGE_TAG:?IMAGE_TAG required}
+    container_name: observer
+    restart: unless-stopped
+    environment:
+      - OBSERVER_STANDALONE=1
+      - PYTHONPATH=/app/src:/app
+      - OBSERVER_DATA_DIR=/app/data/observer
+      - OBSERVER_LOG_DIR=/app/logs
+      - OBSERVER_SYSTEM_LOG_DIR=/app/logs/system
+      - OBSERVER_MAINTENANCE_LOG_DIR=/app/logs/maintenance
+      - OBSERVER_CONFIG_DIR=/app/config
+      - KIS_TOKEN_CACHE_DIR=/app/secrets/.kis_cache
+      - OBSERVER_ENV_FILE=/app/secrets/.env
+      - KIS_APP_KEY=${KIS_APP_KEY}
+      - KIS_APP_SECRET=${KIS_APP_SECRET}
+      - KIS_IS_VIRTUAL=${KIS_IS_VIRTUAL:-false}
+      - TRACK_A_ENABLED=${TRACK_A_ENABLED:-true}
+      - TRACK_B_ENABLED=${TRACK_B_ENABLED:-false}
+      - DB_HOST=postgres
+      - DB_USER=postgres
+      - DB_PASSWORD=observer_db_pwd
+      - DB_NAME=observer
+      - DB_PORT=5432
+    volumes:
+      - ../../observer/data/observer:/app/data/observer
+      - ../../observer/logs:/app/logs
+      - ../../observer/config:/app/config
+      - ../../observer/secrets:/app/secrets
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"

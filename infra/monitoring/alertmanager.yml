@@ -1,0 +1,33 @@
+global:
+  resolve_timeout: 5m
+
+route:
+  group_by: ['alertname', 'cluster', 'service']
+  group_wait: 10s
+  group_interval: 10s
+  repeat_interval: 12h
+  receiver: 'default'
+  routes:
+    - match:
+        alertname: Watchdog
+      receiver: 'null'
+    - match:
+        severity: critical
+      receiver: 'critical'
+      group_wait: 0s
+      group_interval: 30s
+      repeat_interval: 4h
+
+receivers:
+  - name: 'null'
+  - name: 'default'
+    # Default receiver - can be configured with webhook/email
+  - name: 'critical'
+    # Critical receiver - can be configured with webhook/email
+
+inhibit_rules:
+  - source_match:
+      severity: 'critical'
+    target_match:
+      severity: 'warning'
+    equal: ['alertname', 'service']

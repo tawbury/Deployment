@@ -1,5 +1,5 @@
 # CD workflow: deploy Observer to VM via declarative spec (infra/_shared/deploy/observer.yaml).
-# Triggers: workflow_dispatch or on successful CI completion (workflow_run).
+# Triggers: workflow_dispatch (manual) or repository_dispatch (from app CI).
 # Designed for future replacement by kubectl apply.
 
 name: CD Deploy
@@ -8,18 +8,20 @@ on:
   workflow_dispatch:
     inputs:
       image_tag:
-        description: "Image tag to deploy (e.g. build-20260128-123456). Leave empty to use latest from artifact/conclusion."
+        description: "Image tag to deploy (e.g. build-20260128-123456). Leave empty to use latest."
         required: false
         default: ""
+      environment:
+        description: "Target environment (OCI01, OCI02, ARM01, AWS01, etc.)"
+        required: false
+        default: "OCI01"
       skip_health:
         description: "Skip post-deploy health check"
         required: false
         type: boolean
         default: false
-  workflow_run:
-    workflows: ["CI"]   # Trigger when CI workflow completes; rename to your actual CI workflow name
-    types: [completed]
-    branches: [master, main]
+  repository_dispatch:
+    types: [app_built]
 
 env:
   DEPLOY_SPEC: infra/_shared/deploy/observer.yaml
@@ -28,10 +30,12 @@ jobs:
   deploy:
     name: Deploy to VM
     runs-on: ubuntu-latest
-    # Only run when triggered manually or when CI succeeded
+    # Use GitHub Environment for environment-specific secrets
+    environment: ${{ github.event.client_payload.environment || github.event.inputs.environment || 'OCI01' }}
+    # Only run when triggered manually or by repository_dispatch
     if: |
       github.event_name == 'workflow_dispatch' ||
-      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success')
+      github.event_name == 'repository_dispatch'
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -39,15 +43,14 @@ jobs:
       - name: Resolve image tag
         id: tag
         run: |
-          if [ -n "${{ github.event.inputs.image_tag }}" ]; then
-            echo "tag=${{ github.event.inputs.image_tag }}" >> $GITHUB_OUTPUT
-          elif [ "${{ github.event_name }}" = "workflow_run" ] && [ -n "${{ github.event.workflow_run.head_sha }}" ]; then
-            SHORT_SHA="$(echo "${{ github.event.workflow_run.head_sha }}" | cut -c1-7)"
-            echo "tag=build-$(date +%Y%m%d)-${SHORT_SHA}" >> $GITHUB_OUTPUT
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ -n "${{ github.event.inputs.image_tag }}" ]; then
+            echo "tag=${{ github.event.inputs.image_tag }}" >> "$GITHUB_OUTPUT"
+          elif [ "${{ github.event_name }}" = "repository_dispatch" ] && [ -n "${{ github.event.client_payload.image_tag }}" ]; then
+            echo "tag=${{ github.event.client_payload.image_tag }}" >> "$GITHUB_OUTPUT"
           else
-            echo "tag=latest" >> $GITHUB_OUTPUT
+            echo "tag=latest" >> "$GITHUB_OUTPUT"
           fi
-          echo "Resolved IMAGE_TAG: $(grep '^tag=' $GITHUB_OUTPUT | cut -d= -f2-)"
+          echo "Resolved IMAGE_TAG: $(grep '^tag=' "$GITHUB_OUTPUT" | cut -d= -f2-)"
 
       - name: Deploy via SSH
         env:
@@ -66,5 +69,5 @@ jobs:
       - name: Post-deploy health check (optional)
         if: success() && github.event.inputs.skip_health != 'true'
         run: |
-          echo "Health check is performed inside scripts/deploy.sh on the remote host."
+          echo "Health check is performed inside deploy.sh on the remote host."
           echo "For external checks, configure a job that curls your public endpoint."
