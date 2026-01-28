@@ -7,8 +7,8 @@ name: CD Deploy
 
 on:
   schedule:
-    # Check GHCR for new images every 5 minutes
-    - cron: '*/5 * * * *'
+    # Check GHCR for new images every day at 21:00 KST (12:00 UTC)
+    - cron: '0 12 * * *'
   workflow_dispatch:
     inputs:
       image_tag:
