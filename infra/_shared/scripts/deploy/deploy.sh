@@ -82,9 +82,12 @@ resolve_image() {
   [ -z "$HEALTH_PATH" ] && HEALTH_PATH="/health"
   [ -z "$HEALTH_PORT" ] && HEALTH_PORT="$PORT"
 
-  # Resolve env file path on remote host (relative to REMOTE_DEPLOY_DIR)
+  # Resolve env file path on remote host. Prefer ENV_FILE_PATH (workflow/secret);
+  # else use REMOTE_DEPLOY_DIR + envFile from spec.
   ENV_FILE_ABS=""
-  if [ -n "$ENV_FILE" ]; then
+  if [ -n "${ENV_FILE_PATH:-}" ]; then
+    ENV_FILE_ABS="$ENV_FILE_PATH"
+  elif [ -n "$ENV_FILE" ]; then
     ENV_FILE_ABS="${REMOTE_DEPLOY_DIR%/}/${ENV_FILE}"
   fi
 
