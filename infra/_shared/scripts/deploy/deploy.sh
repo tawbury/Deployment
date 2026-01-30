@@ -55,6 +55,7 @@ get_yaml() {
     restart) grep -E '^\s*restart:\s*' "$file" | sed -E 's/^\s*restart:\s*["]?([^"]*)["]?.*/\1/' | tr -d ' \r' | head -1 ;;
     healthPath) grep -E '^\s*healthPath:\s*' "$file" | sed -E 's/^\s*healthPath:\s*["]?([^"]*)["]?.*/\1/' | tr -d ' \r' | head -1 ;;
     healthPort) grep -E '^\s*healthPort:\s*' "$file" | sed -E 's/^\s*healthPort:\s*([0-9]+).*/\1/' | tr -d ' \r' | head -1 ;;
+    envFile)   grep -E '^\s*envFile:\s*' "$file" | sed -E 's/^\s*envFile:\s*["]?([^"]*)["]?.*/\1/' | tr -d ' \r' | head -1 ;;
     *) echo "" ;;
   esac
 }
@@ -71,6 +72,7 @@ resolve_image() {
   RESTART="$(get_yaml restart)"
   HEALTH_PATH="$(get_yaml healthPath)"
   HEALTH_PORT="$(get_yaml healthPort)"
+  ENV_FILE="$(get_yaml envFile)"
 
   [ -z "$NAME" ] && NAME="observer"
   [ -z "$IMAGE_BASE" ] && IMAGE_BASE="ghcr.io/tawbury/observer"
@@ -79,6 +81,12 @@ resolve_image() {
   [ -z "$RESTART" ] && RESTART="unless-stopped"
   [ -z "$HEALTH_PATH" ] && HEALTH_PATH="/health"
   [ -z "$HEALTH_PORT" ] && HEALTH_PORT="$PORT"
+
+  # Resolve env file path on remote host (relative to REMOTE_DEPLOY_DIR)
+  ENV_FILE_ABS=""
+  if [ -n "$ENV_FILE" ]; then
+    ENV_FILE_ABS="${REMOTE_DEPLOY_DIR%/}/${ENV_FILE}"
+  fi
 
   FINAL_TAG="${SPEC_TAG:-$IMAGE_TAG}"
   if [ -z "$FINAL_TAG" ]; then
@@ -136,7 +144,19 @@ ensure_remote_ghcr_auth() {
 # Remote deploy: one container per replica (clean restart per instance)
 # ------------------------------------------------------------------------------
 deploy_remote() {
-  local container_name host_port i
+  local container_name host_port i run_extra
+
+  if [ -n "$ENV_FILE_ABS" ]; then
+    log_info "Env file: $ENV_FILE_ABS (on remote host)"
+    if ! run_ssh "test -f '${ENV_FILE_ABS}'"; then
+      log_error "Env file not found on remote: ${ENV_FILE_ABS}. Set envFile in spec or create the file."
+      exit 1
+    fi
+    run_extra="--env-file '${ENV_FILE_ABS}'"
+  else
+    run_extra=""
+  fi
+
   for i in $(seq 1 "$REPLICAS"); do
     if [ "$REPLICAS" -eq 1 ]; then
       container_name="${NAME}"
@@ -151,11 +171,11 @@ deploy_remote() {
     run_ssh "sudo docker pull ${FULL_IMAGE}"
     run_ssh "sudo docker stop ${container_name} 2>/dev/null || true"
     run_ssh "sudo docker rm ${container_name} 2>/dev/null || true"
-    run_ssh "sudo docker run -d \
-      --name ${container_name} \
-      --restart ${RESTART} \
-      -p ${host_port}:${HEALTH_PORT} \
-      ${FULL_IMAGE}"
+    if [ -n "$run_extra" ]; then
+      run_ssh "sudo docker run -d --name ${container_name} --restart ${RESTART} -p ${host_port}:${HEALTH_PORT} ${run_extra} ${FULL_IMAGE}"
+    else
+      run_ssh "sudo docker run -d --name ${container_name} --restart ${RESTART} -p ${host_port}:${HEALTH_PORT} ${FULL_IMAGE}"
+    fi
   done
 }
 
@@ -187,7 +207,11 @@ main() {
   fi
 
   resolve_image
-  log_info "Image: $FULL_IMAGE | Replicas: $REPLICAS | Port: $PORT"
+  if [ -n "$ENV_FILE_ABS" ]; then
+    log_info "Image: $FULL_IMAGE | Replicas: $REPLICAS | Port: $PORT | Env: $ENV_FILE_ABS"
+  else
+    log_info "Image: $FULL_IMAGE | Replicas: $REPLICAS | Port: $PORT"
+  fi
 
   if [ -z "${SSH_HOST:-}" ]; then
     log_error "SSH_HOST is required (GitHub Secret or argument)."

@@ -26,8 +26,9 @@ spec:
   # Restart policy: always | unless-stopped | on-failure
   restart: unless-stopped
 
-  # Optional: extra env file path on remote host (relative to DEPLOY_DIR)
-  # envFile: .env
+  # Env file on remote host (relative to DEPLOY_DIR). Injected via docker run --env-file.
+  # Example: /home/ubuntu/observer/secrets/.env when DEPLOY_DIR=/home/ubuntu/observer.
+  envFile: secrets/.env
 
   # Optional: docker run extra args (e.g. -e KEY=val, --memory=1g)
   # extraArgs: ""
