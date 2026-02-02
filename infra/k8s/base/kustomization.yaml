@@ -1,25 +1,26 @@
+# Observer 앱 전용 base (Port 8000, /health)
+# 이미지 태그는 overlays에서 YYYYMMDD-HHMMSS 형식으로 지정
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
-# 기본 Namespace
-namespace: prj-01
+namespace: observer
 
-# 포함할 리소스 목록
 resources:
-  - namespaces/prj-01.yaml
-  - deployments/app.yaml
-  - services/app-svc.yaml
-  - configmaps/app-config.yaml
-  # - secrets/app-secrets.yaml  # SealedSecrets 사용 시 주석 해제
-  # - pvc/app-pvc.yaml          # 영속 스토리지 필요 시 주석 해제
-  # - ingress/app-ingress.yaml  # 외부 노출 시 주석 해제
+  - namespaces/observer.yaml
+  - deployments/postgres.yaml
+  - deployments/observer.yaml
+  - services/postgres-svc.yaml
+  - services/observer-svc.yaml
+  - configmaps/observer-config.yaml
+  # observer-secrets: kubectl create secret 로 생성 (secrets/observer-secrets.yaml 가이드 참고)
+  - pvc/observer-db-pvc.yaml
+  - pvc/observer-logs-pvc.yaml
+  # - ingress/observer-ingress.yaml  # 외부 노출 시 주석 해제
 
-# 공통 레이블 (모든 리소스에 적용)
 commonLabels:
-  app.kubernetes.io/name: prj-01
+  app.kubernetes.io/name: observer
   app.kubernetes.io/managed-by: kustomize
-  app.kubernetes.io/part-of: kubernetes-k8s-template
+  app.kubernetes.io/part-of: tawbury-deployment
 
-# 공통 어노테이션
 commonAnnotations:
-  template.version: "2.0.0"
+  k8s.tawbury/version: "2.0.0"

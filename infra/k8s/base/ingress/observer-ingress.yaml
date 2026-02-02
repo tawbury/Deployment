@@ -1,0 +1,22 @@
+# Observer 외부 노출용 Ingress (필요 시 overlays에서 host 패치)
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: observer
+  labels:
+    app: observer
+  annotations:
+    # k3s 기본: traefik
+    # kubernetes.io/ingress.class: traefik
+spec:
+  rules:
+    - host: observer.example.com  # overlays에서 환경별로 변경
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: observer
+                port:
+                  number: 8000

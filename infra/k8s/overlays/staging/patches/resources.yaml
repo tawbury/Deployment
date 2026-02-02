@@ -1,17 +1,17 @@
-# 스테이징 환경: 리소스 제한 (비용 절감)
+# Observer 스테이징: 리소스
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: app
+  name: observer
 spec:
   template:
     spec:
       containers:
-        - name: app
+        - name: observer
           resources:
             requests:
-              memory: "128Mi"
-              cpu: "50m"
+              memory: "256Mi"
+              cpu: "100m"
             limits:
               memory: "512Mi"
-              cpu: "250m"
+              cpu: "500m"

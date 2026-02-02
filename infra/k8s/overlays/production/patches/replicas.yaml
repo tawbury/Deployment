@@ -1,7 +1,7 @@
-# 프로덕션 환경: replicas 증가
+# Observer 프로덕션: replicas
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: app
+  name: observer
 spec:
-  replicas: 3  # 고가용성을 위해 3개 이상 권장
+  replicas: 2  # HA 필요 시 3 이상

@@ -1,7 +1,7 @@
-# 스테이징 환경: replicas 최소화 (비용 절감)
+# Observer 스테이징: replicas
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: app
+  name: observer
 spec:
   replicas: 1

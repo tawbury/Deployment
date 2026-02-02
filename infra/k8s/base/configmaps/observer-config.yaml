@@ -1,0 +1,17 @@
+# Observer 앱용 ConfigMap (비밀 값 제외)
+# 환경별 값은 overlays에서 패치
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: observer-config
+  labels:
+    app: observer
+data:
+  LOG_LEVEL: "INFO"
+  LOG_FORMAT: "json"
+  SERVICE_PORT: "8000"
+  # PostgreSQL (동일 네임스페이스 내 short name; overlay에서도 동일하게 동작)
+  DB_HOST: "postgres-svc"
+  DB_PORT: "5432"
+  DB_NAME: "observer"
+  # DB 사용자/비밀번호는 observer-secrets (PGUSER, PGPASSWORD) 로 주입

@@ -1,93 +1,90 @@
-# Kubernetes Manifests
+# Kubernetes (K3s) Manifests – Observer
 
-k3s/Kubernetes 환경에서 워크로드를 배포하기 위한 kustomize 기반 manifests입니다.
+k3s/Kubernetes 환경에서 **Observer** 앱을 배포하기 위한 kustomize 기반 매니페스트입니다.
 
 ## 디렉터리 구조
 
 ```
 k8s/
-├── base/                     # 모든 환경에서 공통으로 사용하는 manifests
-│   ├── namespaces/           # Namespace 정의
-│   ├── deployments/          # Deployment 정의
-│   ├── services/             # Service 정의
-│   ├── configmaps/           # ConfigMap 정의
-│   ├── secrets/              # Secret 템플릿 (실제 값은 SealedSecrets)
-│   ├── pvc/                  # PersistentVolumeClaim 정의
-│   ├── ingress/              # Ingress 정의
-│   └── kustomization.yaml    # base 리소스 조합
-└── overlays/                 # 환경별 오버레이
-    ├── production/           # 프로덕션 환경
-    │   ├── kustomization.yaml
+├── base/                         # Observer 전용 공통 리소스
+│   ├── namespaces/observer.yaml
+│   ├── deployments/observer.yaml # Port 8000, /health
+│   ├── services/observer-svc.yaml
+│   ├── configmaps/observer-config.yaml
+│   ├── secrets/                  # kubectl create secret 가이드만 (값 없음)
+│   ├── pvc/observer-db-pvc.yaml
+│   ├── pvc/observer-logs-pvc.yaml
+│   ├── ingress/observer-ingress.yaml  # 필요 시 주석 해제
+│   └── kustomization.yaml
+└── overlays/
+    ├── production/
+    │   ├── kustomization.yaml    # 이미지 태그: YYYYMMDD-HHMMSS
     │   └── patches/
-    │       ├── replicas.yaml
-    │       └── resources.yaml
-    └── staging/              # 스테이징 환경
+    └── staging/
         ├── kustomization.yaml
         └── patches/
 ```
 
+## 이미지 태그 정책
+
+- **형식**: `ghcr.io/tawbury/observer:YYYYMMDD-HHMMSS` (KST 빌드 시점)
+- **자동 생성**: `infra/_shared/scripts/build/generate_build_tag.sh`
+- **배포 시 태그 지정**:
+  ```bash
+  IMAGE_TAG=$(infra/_shared/scripts/build/generate_build_tag.sh)
+  infra/_shared/scripts/deploy/k8s-deploy.sh production "$IMAGE_TAG"
+  ```
+  또는 overlay에서 수동: `kustomize edit set image ghcr.io/tawbury/observer=ghcr.io/tawbury/observer:20260202-143512`
+
 ## 사용법
 
-### 1. 로컬에서 manifest 확인 (dry-run)
+### 1. manifest 확인 (dry-run)
 
 ```bash
-# 스테이징 환경 manifest 확인
 kustomize build overlays/staging
-
-# 프로덕션 환경 manifest 확인
 kustomize build overlays/production
 ```
 
 ### 2. 배포
 
 ```bash
-# 스테이징 환경 배포
 kubectl apply -k overlays/staging
-
-# 프로덕션 환경 배포
 kubectl apply -k overlays/production
 ```
 
-### 3. 이미지 태그 업데이트
+또는 스크립트:
 
 ```bash
-cd overlays/production
-kustomize edit set image ghcr.io/org/app=ghcr.io/org/app:v1.2.3
+./infra/_shared/scripts/deploy/k8s-deploy.sh production 20260202-143512
 ```
 
-### 4. 롤아웃 상태 확인
+### 3. 롤아웃 / 롤백
 
 ```bash
-kubectl rollout status deployment/app -n prj-01-prod
+kubectl rollout status deployment/observer -n observer-prod
+kubectl rollout undo deployment/observer -n observer-prod
 ```
 
-### 5. 롤백
-
-```bash
-kubectl rollout undo deployment/app -n prj-01-prod
-```
-
-## GHCR 인증 설정
-
-Private 레포에서 이미지를 pull하려면 Secret을 생성해야 합니다:
+## GHCR 인증
 
 ```bash
 kubectl create secret docker-registry ghcr-secret \
   --docker-server=ghcr.io \
-  --docker-username=$GITHUB_USERNAME \
-  --docker-password=$GITHUB_PAT \
-  --docker-email=$GITHUB_EMAIL \
-  -n prj-01
+  --docker-username=YOUR_GITHUB_USER \
+  --docker-password=YOUR_GITHUB_PAT \
+  --docker-email=your@email.com \
+  -n observer
+# production/staging namespace에도 동일하게 생성
 ```
 
-## 환경별 설정
+## 환경별 요약
 
-| 환경 | Namespace | replicas | CPU limit | Memory limit |
-|------|-----------|----------|-----------|--------------|
-| staging | prj-01-staging | 1 | 250m | 512Mi |
-| production | prj-01-prod | 3 | 1000m | 2Gi |
+| 환경       | Namespace      | replicas | 이미지 태그        |
+|-----------|----------------|----------|--------------------|
+| staging   | observer-staging | 1      | YYYYMMDD-HHMMSS    |
+| production| observer-prod  | 2        | YYYYMMDD-HHMMSS    |
 
 ## 관련 문서
 
-- [Deploy Architecture](../../docs/arch/deploy_architecture.md)
-- [Deploy Sub Architecture](../../docs/arch/deploy_sub_architecture.md)
+- [PERSISTENCE_AND_HOSTPATH.md](../../docs/PERSISTENCE_AND_HOSTPATH.md) – DB/로그 호스트 매핑
+- [KUBECTL_AND_ARGOCD_SETUP.md](../../docs/KUBECTL_AND_ARGOCD_SETUP.md) – 서버 kubectl/ArgoCD 설정

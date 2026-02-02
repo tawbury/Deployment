@@ -1,0 +1,53 @@
+# DB 마이그레이션 Job 템플릿 (앱 배포 전 1회 실행)
+# 사용: ConfigMap(observer-migrations) 생성 후 이 Job을 적용. 완료 후 Observer Deployment 배포.
+# ArgoCD Pre-Sync Hook으로 사용 시: annotations 아래 hook 주석 해제
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: observer-migrate
+  namespace: observer  # overlay에 맞게 namespace 변경
+  # ArgoCD Pre-Sync Hook: 앱 배포 전에 이 Job이 성공할 때까지 대기
+  # annotations:
+  #   argocd.argoproj.io/hook: PreSync
+  #   argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+spec:
+  ttlSecondsAfterFinished: 3600  # 완료 1시간 후 Job Pod 자동 삭제 (리소스 정리)
+  backoffLimit: 3
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: migrate
+          image: postgres:15-alpine
+          command:
+            - /bin/sh
+            - -c
+            - |
+              set -e
+              export PGHOST="${PGHOST}" PGPORT="${PGPORT}" PGDATABASE="${PGDATABASE}" PGUSER="${PGUSER}" PGPASSWORD="${PGPASSWORD}"
+              for f in 001_create_scalp_tables.sql 002_create_swing_tables.sql 003_create_portfolio_tables.sql 004_create_analysis_tables.sql; do
+                [ -f "/migrations/$f" ] || continue
+                echo "Running $f ..."
+                psql -v ON_ERROR_STOP=1 -f "/migrations/$f"
+              done
+              echo "Migrations completed."
+          envFrom:
+            - secretRef:
+                name: observer-secrets  # DB 접속 정보 포함 (PGHOST, PGPORT, PGDATABASE, PGUSER, PGPASSWORD)
+          volumeMounts:
+            - name: migrations
+              mountPath: /migrations
+              readOnly: true
+      volumes:
+        - name: migrations
+          configMap:
+            name: observer-migrations  # kubectl create configmap observer-migrations --from-file=./infra/_shared/migrations/ -n observer
+---
+# observer-migrations ConfigMap 생성 예시 (배포 스크립트 또는 수동):
+# kubectl create configmap observer-migrations \
+#   --from-file=001_create_scalp_tables.sql=infra/_shared/migrations/001_create_scalp_tables.sql \
+#   --from-file=002_create_swing_tables.sql=infra/_shared/migrations/002_create_swing_tables.sql \
+#   --from-file=003_create_portfolio_tables.sql=infra/_shared/migrations/003_create_portfolio_tables.sql \
+#   --from-file=004_create_analysis_tables.sql=infra/_shared/migrations/004_create_analysis_tables.sql \
+#   -n observer

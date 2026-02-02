@@ -1,24 +1,20 @@
+# Observer 프로덕션 오버레이
+# 이미지 태그: ghcr.io/tawbury/observer:YYYYMMDD-HHMMSS (빌드 시점 타임스탬프)
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
-# base 참조
 resources:
   - ../../base
 
-# 프로덕션 전용 Namespace (선택적)
-namespace: prj-01-prod
+namespace: observer-prod
 
-# 이미지 태그 설정 (GHCR에서 pull할 버전)
 images:
-  - name: ghcr.io/org/app
-    newTag: v1.0.0  # 실제 릴리스 버전으로 변경
+  - name: ghcr.io/tawbury/observer
+    newTag: "20260202-120000"  # 실제 배포 시 YYYYMMDD-HHMMSS 로 교체
 
-# 환경별 레이블 추가
 commonLabels:
   environment: production
 
-# 패치 적용
 patches:
   - path: patches/replicas.yaml
   - path: patches/resources.yaml
-  # - path: patches/ingress-host.yaml  # 프로덕션 도메인 설정 시

@@ -6,10 +6,11 @@
 # 용도: kustomize overlay를 사용하여 앱 배포
 #
 # 사용법:
-#   ./k8s-deploy.sh staging                    # 스테이징 배포
-#   ./k8s-deploy.sh production                 # 프로덕션 배포
-#   ./k8s-deploy.sh staging v1.2.3            # 특정 버전으로 배포
-#   ./k8s-deploy.sh production --dry-run      # dry-run 모드
+#   ./k8s-deploy.sh staging                           # 스테이징 배포
+#   ./k8s-deploy.sh production                        # 프로덕션 배포
+#   ./k8s-deploy.sh production 20260202-143512        # YYYYMMDD-HHMMSS 태그로 배포
+#   IMAGE_TAG=$(../build/generate_build_tag.sh) ./k8s-deploy.sh production  # 빌드 태그 자동
+#   ./k8s-deploy.sh production --dry-run              # dry-run 모드
 #
 # ============================================
 
@@ -86,7 +87,7 @@ log_info "Overlay 경로: ${OVERLAY_PATH}"
 if [[ -n "$IMAGE_TAG" ]]; then
     log_step "이미지 태그 업데이트: ${IMAGE_TAG}"
     cd "$OVERLAY_PATH"
-    kustomize edit set image "ghcr.io/org/app=ghcr.io/org/app:${IMAGE_TAG}"
+    kustomize edit set image "ghcr.io/tawbury/observer=ghcr.io/tawbury/observer:${IMAGE_TAG}"
     cd - > /dev/null
 fi
 
@@ -112,17 +113,17 @@ kubectl apply -f "$MANIFEST_FILE"
 rm "$MANIFEST_FILE"
 
 # Namespace 확인
-NAMESPACE=$(kustomize build "$OVERLAY_PATH" | grep -m1 "namespace:" | awk '{print $2}' || echo "prj-01")
+NAMESPACE=$(kustomize build "$OVERLAY_PATH" | grep -m1 "namespace:" | awk '{print $2}' || echo "observer")
 log_info "Namespace: ${NAMESPACE}"
 
 # 롤아웃 대기
 log_step "롤아웃 대기 중... (timeout: ${TIMEOUT})"
-if kubectl rollout status deployment/app -n "${NAMESPACE}" --timeout="${TIMEOUT}"; then
+if kubectl rollout status deployment/observer -n "${NAMESPACE}" --timeout="${TIMEOUT}"; then
     log_info "롤아웃 완료!"
 else
     log_error "롤아웃 실패 또는 타임아웃"
     log_warn "상태 확인: kubectl get pods -n ${NAMESPACE}"
-    log_warn "롤백: kubectl rollout undo deployment/app -n ${NAMESPACE}"
+    log_warn "롤백: kubectl rollout undo deployment/observer -n ${NAMESPACE}"
     exit 1
 fi
 
@@ -133,10 +134,10 @@ log_info "배포 완료!"
 log_info "========================================"
 log_info ""
 log_info "리소스 상태:"
-kubectl get pods,svc,deploy -n "${NAMESPACE}" -l app=app
+kubectl get pods,svc,deploy -n "${NAMESPACE}" -l app=observer
 
 log_info ""
 log_info "유용한 명령어:"
-log_info "  로그: kubectl logs -f deployment/app -n ${NAMESPACE}"
-log_info "  상태: kubectl describe deployment/app -n ${NAMESPACE}"
-log_info "  롤백: kubectl rollout undo deployment/app -n ${NAMESPACE}"
+log_info "  로그: kubectl logs -f deployment/observer -n ${NAMESPACE}"
+log_info "  상태: kubectl describe deployment/observer -n ${NAMESPACE}"
+log_info "  롤백: kubectl rollout undo deployment/observer -n ${NAMESPACE}"

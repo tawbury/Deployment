@@ -1,13 +1,13 @@
-# 프로덕션 환경: 리소스 limit 증가
+# Observer 프로덕션: 리소스
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: app
+  name: observer
 spec:
   template:
     spec:
       containers:
-        - name: app
+        - name: observer
           resources:
             requests:
               memory: "512Mi"

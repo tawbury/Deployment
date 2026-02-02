@@ -1,0 +1,14 @@
+# Observer 로그용 PVC
+# 서버 /home/ubuntu/data 매핑은 docs/PERSISTENCE_AND_HOSTPATH.md 참고
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: observer-logs-pvc
+  labels:
+    app: observer
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi

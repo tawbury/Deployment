@@ -1,14 +1,11 @@
 # CD workflow: deploy Observer to VM via declarative spec (infra/_shared/deploy/observer.yaml).
 # Kubernetes-like architecture: detect new GHCR images and deploy automatically.
-# Triggers: schedule (poll GHCR every 5 min) or workflow_dispatch (manual override).
+# Triggers: workflow_dispatch (manual override).
 # Designed for future replacement by kubectl apply.
 
 name: CD Deploy
 
 on:
-  schedule:
-    # Check GHCR for new images every day at 21:00 KST (12:00 UTC)
-    - cron: '0 12 * * *'
   workflow_dispatch:
     inputs:
       image_tag:
