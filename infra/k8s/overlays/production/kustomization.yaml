@@ -10,7 +10,7 @@ namespace: observer-prod
 
 images:
   - name: ghcr.io/tawbury/observer
-    newTag: "20260202-120000"  # 실제 배포 시 YYYYMMDD-HHMMSS 로 교체
+    newTag: build-20260203-032529
 
 commonLabels:
   environment: production
