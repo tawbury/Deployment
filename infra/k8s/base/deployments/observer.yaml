@@ -22,7 +22,7 @@ spec:
 
       containers:
         - name: observer
-          image: ghcr.io/tawbury/observer:build-20260202-133121  # overlays에서 YYYYMMDD-HHMMSS 태그 지정
+          image: ghcr.io/tawbury/observer:build-20260203-022959  # overlays에서 YYYYMMDD-HHMMSS 태그 지정
           imagePullPolicy: Always
 
           ports:
