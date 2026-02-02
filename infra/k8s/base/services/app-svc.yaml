@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: app
+  labels:
+    app: app
+spec:
+  type: ClusterIP  # 클러스터 내부 접근용 (Ingress로 외부 노출)
+  ports:
+    - name: http
+      port: 80
+      targetPort: http  # 8080
+      protocol: TCP
+    - name: metrics
+      port: 9090
+      targetPort: metrics
+      protocol: TCP
+  selector:
+    app: app

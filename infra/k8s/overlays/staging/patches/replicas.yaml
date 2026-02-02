@@ -1,0 +1,7 @@
+# 스테이징 환경: replicas 최소화 (비용 절감)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: app
+spec:
+  replicas: 1

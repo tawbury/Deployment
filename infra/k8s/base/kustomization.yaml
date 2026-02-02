@@ -1,0 +1,25 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# 기본 Namespace
+namespace: prj-01
+
+# 포함할 리소스 목록
+resources:
+  - namespaces/prj-01.yaml
+  - deployments/app.yaml
+  - services/app-svc.yaml
+  - configmaps/app-config.yaml
+  # - secrets/app-secrets.yaml  # SealedSecrets 사용 시 주석 해제
+  # - pvc/app-pvc.yaml          # 영속 스토리지 필요 시 주석 해제
+  # - ingress/app-ingress.yaml  # 외부 노출 시 주석 해제
+
+# 공통 레이블 (모든 리소스에 적용)
+commonLabels:
+  app.kubernetes.io/name: prj-01
+  app.kubernetes.io/managed-by: kustomize
+  app.kubernetes.io/part-of: kubernetes-k8s-template
+
+# 공통 어노테이션
+commonAnnotations:
+  template.version: "2.0.0"
