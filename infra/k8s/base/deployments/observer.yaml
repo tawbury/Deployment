@@ -1,6 +1,6 @@
 # Observer 앱 전용 Deployment
 # Port: 8000, HealthCheck: /health
-# DB는 별도 PostgreSQL Service(postgres-svc)로 접속. 로그만 observer-logs-pvc 사용.
+# DB는 별도 PostgreSQL Service(postgres:5432)로 접속. 로그만 observer-logs-pvc 사용.
 apiVersion: apps/v1
 kind: Deployment
 metadata:

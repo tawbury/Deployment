@@ -59,7 +59,7 @@ kubectl create secret docker-registry ghcr-secret \
 민감 정보는 Git에 넣지 않고, **observer 네임스페이스**에서만 생성합니다. Postgres Deployment 초기화와 Observer 앱·마이그레이션 Job이 같은 Secret을 참조합니다.
 
 - **POSTGRES_USER**, **POSTGRES_PASSWORD**, **POSTGRES_DB**: Postgres 컨테이너 초기화용
-- **PGHOST**, **PGPORT**, **PGDATABASE**, **PGUSER**, **PGPASSWORD**: Observer 앱 및 마이그레이션 Job 접속용 (PGHOST는 postgres-svc FQDN)
+- **PGHOST**, **PGPORT**, **PGDATABASE**, **PGUSER**, **PGPASSWORD**: Observer 앱 및 마이그레이션 Job 접속용 (PGHOST=postgres, 포트 5432)
 
 ```bash
 # observer 네임스페이스 내에서 생성 (base 사용 시)
@@ -67,11 +67,13 @@ kubectl create secret generic observer-secrets \
   --from-literal=POSTGRES_USER=observer \
   --from-literal=POSTGRES_PASSWORD=your-db-password \
   --from-literal=POSTGRES_DB=observer \
-  --from-literal=PGHOST=postgres-svc.observer.svc.cluster.local \
+  --from-literal=PGHOST=postgres \
   --from-literal=PGPORT=5432 \
   --from-literal=PGDATABASE=observer \
   --from-literal=PGUSER=observer \
   --from-literal=PGPASSWORD=your-db-password \
+  --from-literal=DB_USER=observer \
+  --from-literal=DB_PASSWORD=your-db-password \
   -n observer
 ```
 
@@ -82,15 +84,17 @@ kubectl create secret generic observer-secrets \
   --from-literal=POSTGRES_USER=observer \
   --from-literal=POSTGRES_PASSWORD=your-db-password \
   --from-literal=POSTGRES_DB=observer \
-  --from-literal=PGHOST=postgres-svc.observer-prod.svc.cluster.local \
+  --from-literal=PGHOST=postgres \
   --from-literal=PGPORT=5432 \
   --from-literal=PGDATABASE=observer \
   --from-literal=PGUSER=observer \
   --from-literal=PGPASSWORD=your-db-password \
+  --from-literal=DB_USER=observer \
+  --from-literal=DB_PASSWORD=your-db-password \
   -n observer-prod
 ```
 
-가이드: `infra/k8s/base/secrets/observer-secrets.yaml` 주석 참고.
+가이드: `infra/k8s/base/secrets/observer-secrets.yaml` 주석 참고. 앱 Config가 **DB_USER**, **DB_PASSWORD**를 읽으면 위와 같이 Secret에 포함해야 합니다.
 
 ### 1.4 마이그레이션 ConfigMap 및 Job (선택)
 

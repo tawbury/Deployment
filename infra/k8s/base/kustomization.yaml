@@ -7,7 +7,7 @@ resources:
   #- namespaces/observer.yaml
   - deployments/postgres.yaml
   - deployments/observer.yaml
-  - services/postgres-svc.yaml
+  - services/postgres.yaml
   - services/observer-svc.yaml
   - configmaps/observer-config.yaml
   # observer-secrets: kubectl create secret 로 생성 (secrets/observer-secrets.yaml 가이드 참고)

@@ -1,9 +1,9 @@
 # PostgreSQL 내부 노출 (Observer 앱이 5432로 접속)
-# DNS: postgres-svc.observer.svc.cluster.local (동일 네임스페이스에서는 postgres-svc)
+# 서비스 이름: postgres (동일 네임스페이스에서 DB_HOST=postgres, 포트 5432)
 apiVersion: v1
 kind: Service
 metadata:
-  name: postgres-svc
+  name: postgres
   labels:
     app: postgres
 spec:
