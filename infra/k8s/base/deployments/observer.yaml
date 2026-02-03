@@ -33,7 +33,6 @@ spec:
           securityContext:
             runAsUser: 1000
             runAsGroup: 1000
-            fsGroup: 1000
             runAsNonRoot: true
             readOnlyRootFilesystem: true
             allowPrivilegeEscalation: false
@@ -84,8 +83,8 @@ spec:
 
           resources:
             requests:
-              memory: "256Mi"
-              cpu: "100m"
+              memory: "512Mi"
+              cpu: "250m"
             limits:
               memory: "1Gi"
               cpu: "1000m"
