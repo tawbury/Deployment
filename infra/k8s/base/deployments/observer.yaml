@@ -1,6 +1,6 @@
 # Observer 앱 전용 Deployment
 # Port: 8000, HealthCheck: /health
-# DB는 별도 PostgreSQL Service(postgres:5432)로 접속. observer-logs-pvc(/app/logs), observer-data-pvc(/app/data) 사용.
+# Storage: hostPath (/opt/platform/runtime/observer/{data,logs,config})
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -20,10 +20,25 @@ spec:
       imagePullSecrets:
         - name: ghcr-secret
 
+      # Pod 단위 보안 컨텍스트
+      securityContext:
+        fsGroup: 1000
+
       containers:
         - name: observer
-          image: ghcr.io/tawbury/observer:build-20260203-032529  # overlays에서 YYYYMMDD-HHMMSS 태그 지정
+          image: ghcr.io/tawbury/observer:build-20260203-032529
           imagePullPolicy: Always
+
+          # Container 단위 보안 컨텍스트
+          securityContext:
+            runAsUser: 1000
+            runAsGroup: 1000
+            runAsNonRoot: true
+            readOnlyRootFilesystem: true
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
 
           ports:
             - name: http
@@ -47,7 +62,7 @@ spec:
                 fieldRef:
                   fieldPath: metadata.namespace
 
-          # Observer 헬스체크: /health (readiness/liveness 동일)
+          # Observer 헬스체크
           livenessProbe:
             httpGet:
               path: /health
@@ -75,17 +90,26 @@ spec:
               cpu: "1000m"
 
           volumeMounts:
-            - name: observer-logs
-              mountPath: /app/logs
             - name: observer-data
               mountPath: /app/data
+            - name: observer-logs
+              mountPath: /app/logs
+            - name: observer-config
+              mountPath: /app/config
+              readOnly: true
 
       terminationGracePeriodSeconds: 30
 
       volumes:
-        - name: observer-logs
-          persistentVolumeClaim:
-            claimName: observer-logs-pvc
         - name: observer-data
-          persistentVolumeClaim:
-            claimName: observer-data-pvc
+          hostPath:
+            path: /opt/platform/runtime/observer/data
+            type: Directory
+        - name: observer-logs
+          hostPath:
+            path: /opt/platform/runtime/observer/logs
+            type: Directory
+        - name: observer-config
+          hostPath:
+            path: /opt/platform/runtime/observer/config
+            type: Directory
