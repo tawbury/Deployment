@@ -33,6 +33,7 @@ spec:
           securityContext:
             runAsUser: 1000
             runAsGroup: 1000
+            fsGroup: 1000
             runAsNonRoot: true
             readOnlyRootFilesystem: true
             allowPrivilegeEscalation: false
@@ -96,7 +97,7 @@ spec:
               mountPath: /opt/platform/runtime/observer/logs
             - name: observer-config
               mountPath: /opt/platform/runtime/observer/config
-              readOnly: true
+              readOnly: false
 
       terminationGracePeriodSeconds: 30
 
@@ -104,12 +105,12 @@ spec:
         - name: observer-data
           hostPath:
             path: /opt/platform/runtime/observer/data
-            type: Directory
+            type: DirectoryOrCreate
         - name: observer-logs
           hostPath:
             path: /opt/platform/runtime/observer/logs
-            type: Directory
+            type: DirectoryOrCreate
         - name: observer-config
           hostPath:
             path: /opt/platform/runtime/observer/config
-            type: Directory
+            type: DirectoryOrCreate
