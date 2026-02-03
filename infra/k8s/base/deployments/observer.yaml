@@ -91,11 +91,11 @@ spec:
 
           volumeMounts:
             - name: observer-data
-              mountPath: /app/data
+              mountPath: /opt/platform/runtime/observer/data
             - name: observer-logs
-              mountPath: /app/logs
+              mountPath: /opt/platform/runtime/observer/logs
             - name: observer-config
-              mountPath: /app/config
+              mountPath: /opt/platform/runtime/observer/config
               readOnly: true
 
       terminationGracePeriodSeconds: 30
