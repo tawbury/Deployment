@@ -98,6 +98,8 @@ spec:
               mountPath: /opt/platform/runtime/observer/data
             - name: observer-logs
               mountPath: /opt/platform/runtime/observer/logs
+            - name: tmp-config-universe
+              mountPath: /opt/platform/runtime/observer/universe
             - name: observer-config
               mountPath: /opt/platform/runtime/observer/config
               readOnly: false
@@ -112,6 +114,10 @@ spec:
         - name: observer-logs
           hostPath:
             path: /opt/platform/runtime/observer/logs
+            type: DirectoryOrCreate
+        - name: tmp-config-universe
+          hostPath:
+            path: /opt/platform/runtime/observer/universe
             type: DirectoryOrCreate
         - name: observer-config
           hostPath:
