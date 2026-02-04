@@ -19,6 +19,7 @@
 - **GitOps 기반 배포**: ArgoCD를 활용한 Kubernetes 선언적 배포 관리
 - **다중 환경 지원**: `base` 및 `overlays` 구조를 통한 환경별 설정 관리 (Production/Staging)
 - **모니터링 스택**: Prometheus, Grafana, Alertmanager 통합
+- **데이터베이스 마이그레이션**: PostgreSQL 기반 스키마 관리
 - **애플리케이션 컨테이너화**: `observer`, `qts` 등 핵심 엔진의 Docker 빌드 및 배포 설정
 - **데이터베이스 인프라**: PostgreSQL (Bitnami Helm 기반 또는 자체 정의) 및 PVC 관리
 
