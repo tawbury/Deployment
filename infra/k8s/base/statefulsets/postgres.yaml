@@ -1,0 +1,113 @@
+# PostgreSQL 15 StatefulSet (Observer DB)
+# Deployment에서 StatefulSet으로 전환하여 데이터 일관성 강화
+# 기존 observer-db-pvc를 재사용하여 데이터 보존
+
+---
+# Headless Service for StatefulSet
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres-headless
+  labels:
+    app: postgres
+    app.kubernetes.io/name: postgres
+spec:
+  clusterIP: None  # Headless Service
+  ports:
+    - name: postgres
+      port: 5432
+      targetPort: 5432
+      protocol: TCP
+  selector:
+    app: postgres
+
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: postgres
+  labels:
+    app: postgres
+    app.kubernetes.io/name: postgres
+    app.kubernetes.io/part-of: tawbury-deployment
+spec:
+  serviceName: postgres-headless
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres
+  template:
+    metadata:
+      labels:
+        app: postgres
+    spec:
+      securityContext:
+        fsGroup: 999  # postgres 그룹
+
+      containers:
+        - name: postgres
+          image: postgres:15-alpine
+          ports:
+            - name: postgres
+              containerPort: 5432
+              protocol: TCP
+
+          envFrom:
+            - secretRef:
+                name: observer-secrets  # POSTGRES_USER, POSTGRES_PASSWORD, POSTGRES_DB
+
+          env:
+            - name: PGDATA
+              value: /var/lib/postgresql/data/pgdata
+
+          volumeMounts:
+            - name: postgres-data
+              mountPath: /var/lib/postgresql/data
+
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "100m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+
+          livenessProbe:
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - pg_isready -U ${POSTGRES_USER:-postgres}
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 6
+
+          readinessProbe:
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - pg_isready -U ${POSTGRES_USER:-postgres}
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 3
+
+      # 기존 PVC를 재사용 (데이터 보존)
+      volumes:
+        - name: postgres-data
+          persistentVolumeClaim:
+            claimName: observer-db-pvc
+
+  # volumeClaimTemplates는 사용하지 않음 (기존 PVC 재사용)
+  # 신규 PVC가 필요한 경우 아래 주석을 해제하고 위 volumes 섹션을 제거
+  # volumeClaimTemplates:
+  #   - metadata:
+  #       name: postgres-data
+  #     spec:
+  #       accessModes: ["ReadWriteOnce"]
+  #       storageClassName: local-path
+  #       resources:
+  #         requests:
+  #           storage: 10Gi

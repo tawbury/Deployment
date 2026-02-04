@@ -5,15 +5,26 @@ kind: Kustomization
 
 resources:
   #- namespaces/observer.yaml
-  - deployments/postgres.yaml
+
+  # PostgreSQL (StatefulSet으로 전환 - Phase 2)
+  # - deployments/postgres.yaml  # ← Deployment (레거시, 백업됨)
+  - statefulsets/postgres.yaml   # ← StatefulSet (권장)
+
   - deployments/observer.yaml
   - services/postgres.yaml
   - services/observer-svc.yaml
   - configmaps/observer-config.yaml
+
+  # Secrets 관리
   # observer-secrets: kubectl create secret 로 생성 (secrets/observer-secrets.yaml 가이드 참고)
+  # 또는 SealedSecrets 사용 (sealed-secrets/README.md 참고):
+  # - sealed-secrets/observer-sealed-secrets.yaml
+
+  # Persistent Volume Claims
   - pvc/observer-db-pvc.yaml
   - pvc/observer-logs-pvc.yaml
   - pvc/observer-data-pvc.yaml
+
   # - ingress/observer-ingress.yaml  # 외부 노출 시 주석 해제
 
 commonLabels:
