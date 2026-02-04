@@ -1,6 +1,6 @@
-# Kubernetes K8s 템플릿 프로젝트
+# Kubernetes K3s Deployment 프로젝트
 
-이 프로젝트는 Kubernetes 및 컨테이너 기반 인프라 구축을 위한 템플릿 프로젝트입니다. Docker Compose부터 Kubernetes까지 확장 가능한 구조로 설계되었습니다.
+이 프로젝트는 Kubernetes(K3s) 및 컨테이너 기반 인프라 구축을 위한 통합 관리 저장소입니다. ArgoCD를 통한 GitOps 방식의 배포와 모니터링 스택을 포함하고 있습니다.
 
 ## 📋 목차
 
@@ -16,255 +16,106 @@
 
 이 템플릿은 다음을 제공합니다:
 
-- **공통 인프라 리소스**: 모든 환경에서 재사용 가능한 모니터링 및 데이터베이스 설정
-- **다중 환경 지원**: 로컬 개발, OCI 배포, 향후 Kubernetes 배포 지원
-- **확장 가능한 구조**: 점진적으로 Kubernetes로 전환 가능한 아키텍처
+- **GitOps 기반 배포**: ArgoCD를 활용한 Kubernetes 선언적 배포 관리
+- **다중 환경 지원**: `base` 및 `overlays` 구조를 통한 환경별 설정 관리 (Production/Staging)
 - **모니터링 스택**: Prometheus, Grafana, Alertmanager 통합
-- **데이터베이스 마이그레이션**: PostgreSQL 기반 스키마 관리
+- **애플리케이션 컨테이너화**: `observer`, `qts` 등 핵심 엔진의 Docker 빌드 및 배포 설정
+- **데이터베이스 인프라**: PostgreSQL (Bitnami Helm 기반 또는 자체 정의) 및 PVC 관리
 
 ## 프로젝트 구조
 
 ```
-Kubernetes_k8s/
-├── infra/                          # 인프라 설정
-│   ├── _shared/                    # 공통 리소스 (모든 환경 공통)
-│   │   ├── monitoring/             # 모니터링 스택 설정
-│   │   │   ├── prometheus.yml
-│   │   │   ├── alertmanager.yml
-│   │   │   ├── prometheus_alerting_rules.yaml
-│   │   │   ├── grafana_dashboard.json
-│   │   │   ├── grafana_datasources.yml
-│   │   │   └── docker-compose.yml
-│   │   ├── migrations/            # DB 마이그레이션 스크립트
-│   │   │   ├── 001_create_scalp_tables.sql
-│   │   │   ├── 002_create_swing_tables.sql
-│   │   │   └── 003_create_portfolio_tables.sql
-│   │   ├── secrets/               # 민감한 정보 (환경 변수, 인증서 등)
-│   │   │   ├── .env.prod          # 프로덕션 환경 변수 (Git에 커밋되지 않음)
-│   │   │   └── README.md
-│   │   ├── scripts/               # 공통 스크립트
-│   │   │   ├── deploy/            # 배포 (deploy.ps1, server_deploy.sh 등)
-│   │   │   ├── migrate/           # DB 마이그레이션 (migrate.sh)
-│   │   │   ├── docker/            # Docker/Compose 헬퍼
-│   │   │   ├── env/               # 환경 설정 (setup_env_secure.sh 등)
-│   │   │   └── README.md
-│   │   └── README.md
+Deployment/
+├── app/                            # 애플리케이션 Docker 빌드 환경
+│   ├── observer/                   # Observer 엔진 Dockerfile 및 설정
+│   └── qts/                        # QTS 엔진 관련 설정
+│
+├── infra/                          # 인프라 설정 (K8s & Shared)
+│   ├── k8s/                        # Kubernetes 매니페스트 (Kustomize 구조)
+│   │   ├── base/                   # 기본 리소스 정의 (모든 환경 공통)
+│   │   │   ├── deployments/        # 애플리케이션 및 DB 배포 (postgres, observer 등)
+│   │   │   ├── services/           # 로드밸런서 및 내부 서비스 설정
+│   │   │   ├── ingress/            # 접근 제어를 위한 Ingress 설정
+│   │   │   ├── pvc/                # 퍼시스턴트 볼륨 클레임 (데이터 저장소)
+│   │   │   ├── configmaps/         # 공통 설정값
+│   │   │   ├── namespaces/         # 네임스페이스 정의
+│   │   │   ├── monitoring/         # Prometheus/Grafana K8s 리소스
+│   │   │   ├── sealed-secrets/     # 보안을 위해 암호화된 시크릿
+│   │   │   └── kustomization.yaml  # Kustomize 설정
+│   │   └── overlays/               # 환경별 오버라이드 설정
+│   │       └── production/         # 프로덕션 환경 전용 설정 (ArgoCD 참조점)
 │   │
-│   └── oci_deploy/                # OCI 배포 전용 설정
-│       ├── docker-compose.prod.yml
-│       ├── .env.prod.example
-│       └── README_APP_LEGACY.md
+│   ├── _shared/                    # 레거시 및 공통 공유 리소스
+│   │   ├── monitoring/             # 독립 실행형 모니터링 설정 (Prometheus.yml 등)
+│   │   ├── migrations/             # DB 초기화 및 마이그레이션 SQL
+│   │   └── secrets/                # 로컬 테스트용 시크릿 (Git 비포함)
+│   └── _legacy/                    # 이전 버전 호환용 설정
 │
-├── .ai/                            # AI 시스템 설정 (다중 에이전트 시스템)
-│   ├── agents/                     # AI 에이전트 정의
-│   ├── skills/                     # 에이전트 스킬
-│   ├── workflows/                  # 워크플로우 정의
-│   └── README.md
+├── .github/                        # CI/CD 자동화 (GitHub Actions)
+│   └── workflows/                  # 이미지 빌드 및 자동 태깅 워크플로우
 │
-├── .github/                        # GitHub Actions 워크플로우
-│   └── workflows/
-│       ├── build-push-tag.yml
-│       └── deploy-tag.yml
-│
-├── mcp-cli/                        # MCP CLI 도구
-│   └── README.md
-│
-└── README.md                        # 이 파일
+├── docs/                           # 설치 및 운영 가이드 문서
+├── ops/                            # 운영 지원 스크립트
+├── tests/                          # 인프라 검증용 테스트 코드
+└── README.md                       # 이 파일
 ```
 
 ## 빠른 시작
 
 ### 1. 사전 요구사항
 
-- Docker & Docker Compose
-- PostgreSQL (또는 Docker로 실행)
-- (선택) OCI CLI (OCI 배포 시)
+- **Kubernetes**: K3s 또는 표준 K8s 클러스터
+- **Tools**: `kubectl`, `kustomize`
+- **GitOps**: ArgoCD (권장)
 
-### 2. 모니터링 스택 실행
-
-```bash
-# 모니터링 스택만 독립 실행
-cd infra/_shared/monitoring
-docker-compose up -d
-```
-
-접속:
-- Prometheus: http://localhost:9090
-- Grafana: http://localhost:3000 (기본 계정: admin/admin)
-- Alertmanager: http://localhost:9093
-
-### 3. 전체 스택 실행 (OCI 배포)
+### 2. Kustomize를 이용한 로컬 빌드 테스트
 
 ```bash
-# 환경 변수 설정
-cd infra/oci_deploy
-cp .env.prod.example ../_shared/secrets/.env.prod
-# ../_shared/secrets/.env.prod 파일 편집
+# base 리소스 빌드 확인
+kubectl kustomize infra/k8s/base
 
-# 전체 스택 실행
-docker-compose -f docker-compose.prod.yml --env-file ../_shared/secrets/.env.prod up -d
+# production 오버레이 빌드 확인
+kubectl kustomize infra/k8s/overlays/production
 ```
+
+### 3. ArgoCD를 통한 배포
+
+이 저장소를 ArgoCD의 소스(Repository URL)로 등록하고, `infra/k8s/overlays/production` 경로를 대상으로 애플리케이션을 생성합니다.
 
 ## 주요 구성 요소
 
-### 인프라 레이어 (`infra/`)
+### 애플리케이션 이미지 (`app/`)
+- 핵심 서비스 엔진의 Docker 이미지를 빌드하기 위한 환경입니다.
+- GitHub Actions를 통해 빌드된 이미지는 GHCR에 저장됩니다.
 
-#### 공통 리소스 (`infra/_shared/`)
+### Kubernetes 인프라 (`infra/k8s/`)
+- **Base**: 모든 환경에서 공통적으로 사용되는 리소스의 원형입니다.
+- **Overlays**: 특정 환경(Production 등)에 맞게 CPU/Memory 제한, 인스턴스 수, 호스트네임 등을 변경합니다.
 
-**모니터링 스택**
-- **Prometheus**: 메트릭 수집 및 저장
-- **Grafana**: 대시보드 및 시각화
-- **Alertmanager**: 알림 관리 및 라우팅
-
-**데이터베이스 마이그레이션**
-- Scalp Trading (Track B) 테이블
-- Swing Trading (Track A) 테이블
-- 포트폴리오 및 리밸런싱 테이블
-
-**Secrets (민감한 정보)**
-- 환경 변수 파일 (`.env.prod`, `.env.dev` 등)
-- SSL 인증서
-- SSH 키
-- 클라우드 인증 정보
-
-**Scripts (공통 스크립트)**
-- deploy/: 배포 (deploy.ps1, server_deploy.sh 등)
-- migrate/: DB 마이그레이션 (migrate.sh)
-- docker/: Docker/Compose 헬퍼
-- env/: 환경 설정 (setup_env_secure.sh 등)
-
-자세한 내용은 [`infra/_shared/README.md`](infra/_shared/README.md) 참조
-
-#### 환경별 설정
-
-- **`infra/oci_deploy/`**: Oracle Cloud Infrastructure 배포 설정
-  - 자세한 내용은 [`infra/oci_deploy/README_APP_LEGACY.md`](infra/oci_deploy/README_APP_LEGACY.md) 참조
-
-### AI 시스템 (`.ai/`)
-
-다중 에이전트 AI 시스템으로 다음을 포함합니다:
-
-- **에이전트**: Developer, HR, PM, Finance, Contents-Creator
-- **스킬 시스템**: 모듈화된 스킬 기반 작업 처리
-- **워크플로우**: 통합 개발, 콘텐츠 생성, 재무 관리 등
-
-자세한 내용은 [`.ai/README.md`](.ai/README.md) 참조
-
-### CI/CD (`.github/workflows/`)
-
-- **build-push-tag.yml**: 이미지 빌드 및 푸시
-- **deploy-tag.yml**: 태그 기반 배포
+### 데이터 관리 및 지속성
+- **PVC**: `/opt/platform/runtime/` 경로의 영구 저장소를 관리합니다.
+- **Sealed Secrets**: Git 저장소에 안전하게 시크릿을 저장하기 위해 `sealed-secrets`를 사용합니다.
 
 ## 인프라 설정
 
-### 모니터링 설정
+### 모니터링
+Kubernetes 내부의 `infra/k8s/base/monitoring` 설정을 통해 클러스터 리소스와 애플리케이션 메트릭을 수집합니다.
 
-모니터링 설정은 `infra/_shared/monitoring/`에 위치하며, 모든 환경에서 공통으로 사용됩니다.
-
-**주요 파일:**
-- `prometheus.yml`: Prometheus 스크래이퍼 설정
-- `alertmanager.yml`: Alertmanager 라우팅 규칙
-- `prometheus_alerting_rules.yaml`: 알림 규칙 정의
-- `grafana_dashboard.json`: Grafana 대시보드
-- `grafana_datasources.yml`: Grafana 데이터소스 설정
-
-**Docker Compose에서 사용:**
-```yaml
-volumes:
-  - ../_shared/monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
-  - ../_shared/monitoring/prometheus_alerting_rules.yaml:/etc/prometheus/rules.yaml
-  - ../_shared/monitoring/alertmanager.yml:/etc/alertmanager/alertmanager.yml
-  - ../_shared/monitoring/grafana_dashboard.json:/etc/grafana/provisioning/dashboards/observer.json
-  - ../_shared/monitoring/grafana_datasources.yml:/etc/grafana/provisioning/datasources/datasources.yml
-```
-
-### 데이터베이스 마이그레이션
-
-마이그레이션 스크립트는 `infra/_shared/migrations/`에 위치합니다.
-
-**Docker Compose에서 사용:**
-```yaml
-volumes:
-  - ../_shared/migrations:/docker-entrypoint-initdb.d
-```
-
-**수동 실행:**
-```bash
-psql -h ${DB_HOST} -U ${DB_USER} -d ${DB_NAME} < infra/_shared/migrations/001_create_scalp_tables.sql
-psql -h ${DB_HOST} -U ${DB_USER} -d ${DB_NAME} < infra/_shared/migrations/002_create_swing_tables.sql
-psql -h ${DB_HOST} -U ${DB_USER} -d ${DB_NAME} < infra/_shared/migrations/003_create_portfolio_tables.sql
-```
+### 로깅 및 스토리지
+애플리케이션 로그는 각 PVC에 마운트된 경로(`.../logs/`)에 저장되며, 호스트 서버의 실제 경로와 매핑됩니다.
 
 ## 배포 가이드
 
-### 로컬 개발 환경
-
-```bash
-# 모니터링 스택만 실행
-cd infra/_shared/monitoring
-docker-compose up -d
-```
-
-### OCI 배포
-
-1. 환경 변수 설정
-   ```bash
-   cd infra/oci_deploy
-   cp .env.prod.example .env.prod
-   # .env.prod 파일 편집
-   ```
-
-2. Docker Compose로 배포
-   ```bash
-   docker-compose -f docker-compose.prod.yml up -d
-   ```
-
-자세한 배포 가이드는 [`infra/oci_deploy/README_APP_LEGACY.md`](infra/oci_deploy/README_APP_LEGACY.md) 참조
-
-### Kubernetes 배포 (향후)
-
-향후 Kubernetes 환경으로 전환할 때:
-- `infra/_shared/monitoring/`의 설정 파일을 ConfigMap으로 변환
-- `infra/_shared/migrations/`를 InitContainer나 Job으로 실행
-- `infra/_shared/secrets/`의 환경 변수를 Secret 리소스로 변환
-- 동일한 설정 파일을 재사용하여 일관성 유지
-
-## 개발 가이드
-
-### 프로젝트 구조 설계 원칙
-
-1. **공통 리소스 통합**: 모든 환경에서 사용하는 리소스는 `infra/_shared/`에 위치
-2. **환경별 분리**: 환경별 설정은 각 디렉토리(`oci_deploy/`, 향후 `k8s/` 등)에서 관리
-3. **점진적 확장**: Docker Compose에서 시작하여 Kubernetes로 자연스럽게 전환 가능
-
-### 파일 수정 시 주의사항
-
-- **`infra/_shared/`의 파일 수정**: 모든 환경에 영향을 미치므로 신중하게 수정
-- **환경별 커스터마이징**: 각 환경 디렉토리에서 오버라이드하여 관리
-- **경로 참조**: 상대 경로(`../_shared/`)를 사용하여 일관성 유지
-
-## 📚 추가 문서
-
-- [공통 인프라 리소스 가이드](infra/_shared/README.md)
-- [OCI 배포 가이드](infra/oci_deploy/README_APP_LEGACY.md)
-- [AI 시스템 가이드](.ai/README.md)
-- [MCP CLI 가이드](mcp-cli/README.md)
+자세한 배포 프로세스는 [docs/README.md](docs/README.md)를 참조하십시오.
 
 ## 🔄 변경 이력
 
 | 날짜 | 버전 | 변경 사항 |
 |------|------|---------|
-| 2026-01-27 | v1.0 | 초기 템플릿 구조 생성 및 리팩토링 완료 |
+| 2026-02-04 | v2.0 | Kubernetes (K3s) 및 Kustomize 기반 구조로 전면 개편 |
 | 2026-01-27 | v1.1 | 공통 리소스를 `infra/_shared/`로 통합 |
-
-## 📝 라이선스
-
-이 템플릿은 프로젝트 내부 사용을 위한 것입니다.
-
-## 🤝 기여
-
-프로젝트 개선을 위한 제안이나 버그 리포트는 이슈로 등록해주세요.
+| 2026-01-27 | v1.0 | 초기 템플릿 구조 생성 |
 
 ---
 
-**마지막 업데이트**: 2026-01-27
+**마지막 업데이트**: 2026-02-04
