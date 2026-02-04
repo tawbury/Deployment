@@ -10,14 +10,24 @@ data:
   LOG_LEVEL: "INFO"
   LOG_FORMAT: "json"
   SERVICE_PORT: "8000"
+
   # PostgreSQL: 서비스 이름=postgres, 포트 5432 (동일 네임스페이스에서 postgres:5432 접속)
   DB_HOST: "postgres"
   DB_PORT: "5432"
   DB_NAME: "observer"
+
   # 앱에서 사용할 로그/데이터 경로 (volumeMount와 일치해야 함)
   OBSERVER_LOG_DIR: "/opt/platform/runtime/observer/logs"
   OBSERVER_DATA_DIR: "/opt/platform/runtime/observer/data"
-  # Legacy (Keep for compatibility if any other service uses them)
+  OBSERVER_CONFIG_DIR: "/opt/platform/runtime/observer/config"
+  OBSERVER_SYSTEM_LOG_DIR: "/opt/platform/runtime/observer/logs/system"
+  OBSERVER_MAINTENANCE_LOG_DIR: "/opt/platform/runtime/observer/logs/maintenance"
+  OBSERVER_SNAPSHOT_DIR: "/opt/platform/runtime/observer/universe"
+  KIS_TOKEN_CACHE_DIR: "/opt/platform/runtime/observer/data/cache"
+
+  # 운영 모드 설정
+  OBSERVER_STANDALONE: "1"
+  PYTHONUNBUFFERED: "1"
 
   # DB 사용자/비밀번호는 observer-secrets (DB_USER, DB_PASSWORD 또는 PGUSER, PGPASSWORD) 로 주입
   # 앱 Config: DB_HOST, DB_PORT, DB_NAME(여기) + DB_USER, DB_PASSWORD(Secret). DATABASE_URL은 앱에서 조합 또는 Secret에 설정

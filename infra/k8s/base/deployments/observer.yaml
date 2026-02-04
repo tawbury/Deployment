@@ -108,18 +108,15 @@ spec:
 
       volumes:
         - name: observer-data
-          hostPath:
-            path: /opt/platform/runtime/observer/data
-            type: DirectoryOrCreate
+          persistentVolumeClaim:
+            claimName: observer-data-pvc
         - name: observer-logs
-          hostPath:
-            path: /opt/platform/runtime/observer/logs
-            type: DirectoryOrCreate
+          persistentVolumeClaim:
+            claimName: observer-logs-pvc
         - name: tmp-config-universe
-          hostPath:
-            path: /opt/platform/runtime/observer/universe
-            type: DirectoryOrCreate
+          emptyDir: {}  # 임시 데이터는 emptyDir 사용
         - name: observer-config
           hostPath:
             path: /opt/platform/runtime/observer/config
             type: DirectoryOrCreate
+            # 향후 ConfigMap + PVC 조합으로 전환 권장
