@@ -1,0 +1,143 @@
+# Prometheus Alert Rules for Observer
+# 주요 알림 규칙: Pod 재시작, HTTP 에러율, 데이터 수집 중단, PVC 용량, DB 다운
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: observer-alerts
+  labels:
+    prometheus: kube-prometheus
+    role: alert-rules
+    app: observer
+spec:
+  groups:
+    - name: observer.rules
+      interval: 30s
+      rules:
+        # Pod 재시작 알림
+        - alert: ObserverPodRestarting
+          expr: |
+            rate(kube_pod_container_status_restarts_total{
+              namespace="observer-prod",
+              pod=~"observer-.*"
+            }[15m]) > 0
+          for: 5m
+          labels:
+            severity: warning
+            component: observer
+          annotations:
+            summary: "Observer Pod가 반복적으로 재시작됨"
+            description: "Pod {{ $labels.pod }}가 최근 15분간 재시작되었습니다. 로그를 확인하세요."
+            runbook_url: "https://github.com/tawbury/deployment/blob/master/docs/runbooks/pod-restart.md"
+
+        # HTTP 에러율 알림
+        - alert: ObserverHighErrorRate
+          expr: |
+            (
+              sum(rate(observer_http_requests_total{status=~"5.."}[5m]))
+              /
+              sum(rate(observer_http_requests_total[5m]))
+            ) > 0.05
+          for: 5m
+          labels:
+            severity: critical
+            component: observer
+          annotations:
+            summary: "HTTP 5xx 에러율이 5%를 초과함"
+            description: "최근 5분간 에러율: {{ $value | humanizePercentage }}"
+            runbook_url: "https://github.com/tawbury/deployment/blob/master/docs/runbooks/high-error-rate.md"
+
+        # JSONL 파일 생성 중단 알림
+        - alert: ObserverNoDataWritten
+          expr: |
+            increase(observer_jsonl_files_written_total[10m]) == 0
+          for: 10m
+          labels:
+            severity: warning
+            component: observer
+          annotations:
+            summary: "JSONL 파일이 10분간 생성되지 않음"
+            description: "데이터 수집이 중단되었을 가능성이 있습니다. KIS API 연결 및 WebSocket 상태를 확인하세요."
+
+        # PVC 용량 알림
+        - alert: ObserverPVCAlmostFull
+          expr: |
+            (
+              kubelet_volume_stats_used_bytes{
+                namespace="observer-prod",
+                persistentvolumeclaim=~"observer-.*"
+              }
+              /
+              kubelet_volume_stats_capacity_bytes{
+                namespace="observer-prod",
+                persistentvolumeclaim=~"observer-.*"
+              }
+            ) > 0.85
+          for: 5m
+          labels:
+            severity: warning
+            component: observer
+          annotations:
+            summary: "PVC 사용량이 85%를 초과함"
+            description: "{{ $labels.persistentvolumeclaim }}: {{ $value | humanizePercentage }} 사용 중. 데이터 정리 또는 PVC 확장이 필요합니다."
+
+        # DB 연결 실패 알림
+        - alert: ObserverDatabaseDown
+          expr: |
+            up{job="postgres", namespace="observer-prod"} == 0
+          for: 2m
+          labels:
+            severity: critical
+            component: database
+          annotations:
+            summary: "PostgreSQL 데이터베이스가 다운됨"
+            description: "Observer가 DB에 연결할 수 없습니다. PostgreSQL Pod 상태를 확인하세요."
+
+        # Pod 메모리 사용량 높음
+        - alert: ObserverHighMemoryUsage
+          expr: |
+            (
+              container_memory_working_set_bytes{
+                namespace="observer-prod",
+                pod=~"observer-.*",
+                container="observer"
+              }
+              /
+              container_spec_memory_limit_bytes{
+                namespace="observer-prod",
+                pod=~"observer-.*",
+                container="observer"
+              }
+            ) > 0.90
+          for: 5m
+          labels:
+            severity: warning
+            component: observer
+          annotations:
+            summary: "Observer Pod 메모리 사용량이 90%를 초과함"
+            description: "Pod {{ $labels.pod }}: {{ $value | humanizePercentage }} 메모리 사용 중. OOM Killed 위험이 있습니다."
+
+        # HTTP 요청 지연 증가
+        - alert: ObserverHighLatency
+          expr: |
+            histogram_quantile(0.95,
+              sum(rate(observer_http_request_duration_seconds_bucket[5m])) by (le)
+            ) > 5
+          for: 5m
+          labels:
+            severity: warning
+            component: observer
+          annotations:
+            summary: "HTTP 요청 P95 지연시간이 5초를 초과함"
+            description: "현재 P95 지연시간: {{ $value | humanizeDuration }}"
+
+        # WebSocket 연결 끊김 (활성 연결 수가 0)
+        - alert: ObserverNoActiveConnections
+          expr: |
+            observer_active_connections == 0
+          for: 5m
+          labels:
+            severity: warning
+            component: observer
+          annotations:
+            summary: "활성 WebSocket 연결이 없음"
+            description: "KIS API와의 실시간 데이터 스트림이 끊어졌을 가능성이 있습니다."

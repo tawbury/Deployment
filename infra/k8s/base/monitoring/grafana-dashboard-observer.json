@@ -1,0 +1,193 @@
+{
+  "dashboard": {
+    "title": "Observer Production Monitoring",
+    "tags": ["observer", "production", "kis"],
+    "timezone": "Asia/Seoul",
+    "schemaVersion": 27,
+    "refresh": "30s",
+    "panels": [
+      {
+        "id": 1,
+        "title": "HTTP Request Rate",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "sum(rate(observer_http_requests_total[5m]))",
+            "legendFormat": "Total Requests/s"
+          }
+        ],
+        "gridPos": {
+          "x": 0,
+          "y": 0,
+          "w": 12,
+          "h": 8
+        }
+      },
+      {
+        "id": 2,
+        "title": "HTTP Error Rate",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "sum(rate(observer_http_requests_total{status=~\"5..\"}[5m])) / sum(rate(observer_http_requests_total[5m]))",
+            "legendFormat": "5xx Error Rate"
+          }
+        ],
+        "gridPos": {
+          "x": 12,
+          "y": 0,
+          "w": 12,
+          "h": 8
+        },
+        "yaxes": [
+          {
+            "format": "percentunit"
+          }
+        ]
+      },
+      {
+        "id": 3,
+        "title": "PVC Usage (%)",
+        "type": "gauge",
+        "targets": [
+          {
+            "expr": "(kubelet_volume_stats_used_bytes{namespace=\"observer-prod\"} / kubelet_volume_stats_capacity_bytes{namespace=\"observer-prod\"}) * 100",
+            "legendFormat": "{{ persistentvolumeclaim }}"
+          }
+        ],
+        "gridPos": {
+          "x": 0,
+          "y": 8,
+          "w": 6,
+          "h": 8
+        },
+        "options": {
+          "reduceOptions": {
+            "values": false,
+            "calcs": ["lastNotNull"]
+          },
+          "showThresholdLabels": false,
+          "showThresholdMarkers": true
+        },
+        "fieldConfig": {
+          "defaults": {
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "value": null,
+                  "color": "green"
+                },
+                {
+                  "value": 70,
+                  "color": "yellow"
+                },
+                {
+                  "value": 85,
+                  "color": "red"
+                }
+              ]
+            },
+            "unit": "percent"
+          }
+        }
+      },
+      {
+        "id": 4,
+        "title": "Active WebSocket Connections",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "observer_active_connections",
+            "legendFormat": "Active Connections"
+          }
+        ],
+        "gridPos": {
+          "x": 6,
+          "y": 8,
+          "w": 6,
+          "h": 8
+        }
+      },
+      {
+        "id": 5,
+        "title": "Memory Usage",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "container_memory_working_set_bytes{namespace=\"observer-prod\", pod=~\"observer-.*\", container=\"observer\"}",
+            "legendFormat": "{{ pod }}"
+          }
+        ],
+        "gridPos": {
+          "x": 12,
+          "y": 8,
+          "w": 12,
+          "h": 8
+        },
+        "yaxes": [
+          {
+            "format": "bytes"
+          }
+        ]
+      },
+      {
+        "id": 6,
+        "title": "HTTP Request Latency (P95)",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, sum(rate(observer_http_request_duration_seconds_bucket[5m])) by (le))",
+            "legendFormat": "P95 Latency"
+          }
+        ],
+        "gridPos": {
+          "x": 0,
+          "y": 16,
+          "w": 12,
+          "h": 8
+        },
+        "yaxes": [
+          {
+            "format": "s"
+          }
+        ]
+      },
+      {
+        "id": 7,
+        "title": "JSONL Files Written (Total)",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "sum(observer_jsonl_files_written_total)",
+            "legendFormat": "Total Files"
+          }
+        ],
+        "gridPos": {
+          "x": 12,
+          "y": 16,
+          "w": 12,
+          "h": 8
+        }
+      },
+      {
+        "id": 8,
+        "title": "Pod Status",
+        "type": "table",
+        "targets": [
+          {
+            "expr": "kube_pod_status_phase{namespace=\"observer-prod\", pod=~\"observer-.*\"}",
+            "format": "table",
+            "instant": true
+          }
+        ],
+        "gridPos": {
+          "x": 0,
+          "y": 24,
+          "w": 24,
+          "h": 8
+        }
+      }
+    ]
+  }
+}

@@ -1,0 +1,23 @@
+# Prometheus ServiceMonitor for Observer
+# Prometheus Operator가 이 리소스를 감지하여 자동으로 메트릭 수집 설정
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: observer
+  labels:
+    app: observer
+    release: prometheus  # Prometheus Operator가 감지하는 레이블
+spec:
+  selector:
+    matchLabels:
+      app: observer
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: 30s
+      scrapeTimeout: 10s
+      scheme: http
+  namespaceSelector:
+    matchNames:
+      - observer-prod
+      - observer-staging

@@ -25,6 +25,11 @@ resources:
   - pvc/observer-logs-pvc.yaml
   - pvc/observer-data-pvc.yaml
 
+  # Monitoring (Prometheus Operator 필요)
+  # Phase 3: Prometheus ServiceMonitor + AlertRules
+  # - monitoring/observer-servicemonitor.yaml
+  # - monitoring/observer-prometheusrule.yaml
+
   # - ingress/observer-ingress.yaml  # 외부 노출 시 주석 해제
 
 commonLabels:
