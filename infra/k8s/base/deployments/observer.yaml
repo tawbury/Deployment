@@ -98,7 +98,7 @@ spec:
               mountPath: /opt/platform/runtime/observer/data
             - name: observer-logs
               mountPath: /opt/platform/runtime/observer/logs
-            - name: tmp-config-universe
+            - name: observer-universe
               mountPath: /opt/platform/runtime/observer/universe
             - name: observer-config
               mountPath: /opt/platform/runtime/observer/config
@@ -113,8 +113,9 @@ spec:
         - name: observer-logs
           persistentVolumeClaim:
             claimName: observer-logs-pvc
-        - name: tmp-config-universe
-          emptyDir: {}  # 임시 데이터는 emptyDir 사용
+        - name: observer-universe
+          persistentVolumeClaim:
+            claimName: observer-universe-pvc
         - name: observer-config
           hostPath:
             path: /opt/platform/runtime/observer/config

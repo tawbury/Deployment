@@ -24,6 +24,7 @@ resources:
   - pvc/observer-db-pvc.yaml
   - pvc/observer-logs-pvc.yaml
   - pvc/observer-data-pvc.yaml
+  - pvc/observer-universe-pvc.yaml
 
   # Monitoring (Prometheus Operator 필요)
   # Phase 3: Prometheus ServiceMonitor + AlertRules
