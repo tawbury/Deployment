@@ -50,7 +50,7 @@ spec:
                 name: observer-config
             - secretRef:
                 name: observer-secrets
-                optional: true
+                optional: false
 
           env:
             - name: POD_NAME
