@@ -19,6 +19,9 @@ resources:
   # observer-secrets: kubectl create secret 로 생성 (secrets/observer-secrets.yaml 가이드 참고)
   # 또는 SealedSecrets 사용 (sealed-secrets/README.md 참고):
   # - sealed-secrets/observer-sealed-secrets.yaml
+  - sealed-secrets/obs-db-sealed-secret.yaml
+  - sealed-secrets/obs-kis-sealed-secret.yaml
+  - sealed-secrets/obs-kiwoom-sealed-secret.yaml
 
   # Persistent Volume Claims
   - pvc/observer-db-pvc.yaml
