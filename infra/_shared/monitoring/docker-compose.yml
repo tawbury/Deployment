@@ -17,7 +17,7 @@ services:
     networks:
       - observer-network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -29,7 +29,7 @@ services:
 
   observer:
     build:
-      context: ../../../  # 프로젝트 루트(prj_obs) 기준
+      context: ../../../ # 프로젝트 루트(prj_obs) 기준
       dockerfile: infra/docker/docker/Dockerfile
     container_name: observer
     restart: unless-stopped
@@ -38,17 +38,17 @@ services:
     environment:
       # Core settings
       - OBSERVER_STANDALONE=1
-      - PYTHONPATH=/app/src
+      - PYTHONPATH=/opt/platform/observer/src
       # 시간대 설정 (KST)
       - TZ=Asia/Seoul
-      # Path settings (paths.py에서 사용) - 단순화된 경로
-      - OBSERVER_DATA_DIR=/app/data
-      - OBSERVER_LOG_DIR=/app/logs
-      - OBSERVER_SYSTEM_LOG_DIR=/app/logs/system
-      - OBSERVER_MAINTENANCE_LOG_DIR=/app/logs/maintenance
-      - OBSERVER_CONFIG_DIR=/app/config
-      - KIS_TOKEN_CACHE_DIR=/app/secrets/.kis_cache
-      - OBSERVER_ENV_FILE=/app/secrets/.env
+      # Path settings (paths.py에서 사용)
+      - OBSERVER_DATA_DIR=/opt/platform/runtime/observer/data
+      - OBSERVER_LOG_DIR=/opt/platform/runtime/observer/logs
+      - OBSERVER_SYSTEM_LOG_DIR=/opt/platform/runtime/observer/logs/system
+      - OBSERVER_MAINTENANCE_LOG_DIR=/opt/platform/runtime/observer/logs/maintenance
+      - OBSERVER_CONFIG_DIR=/opt/platform/runtime/observer/config
+      - KIS_TOKEN_CACHE_DIR=/opt/platform/runtime/observer/data/cache
+      - OBSERVER_SNAPSHOT_DIR=/opt/platform/runtime/observer/universe
       # Database settings
       - DB_HOST=postgres
       - DB_USER=postgres
@@ -56,10 +56,10 @@ services:
       - DB_NAME=observer
       - DB_PORT=5432
     volumes:
-      - ../../../app/observer/data:/app/data
-      - ../../../app/observer/logs:/app/logs
-      - ../../../app/observer/config:/app/config
-      - ../../../app/observer/secrets:/app/secrets
+      - ../../../data:/opt/platform/runtime/observer/data
+      - ../../../logs:/opt/platform/runtime/observer/logs
+      - ../../../config:/opt/platform/runtime/observer/config
+      - ../../../secrets:/opt/platform/runtime/observer/secrets
     ports:
       - "8000:8000"
     networks:
@@ -99,7 +99,7 @@ services:
       - "--web.console.libraries=/usr/share/prometheus/console_libraries"
       - "--web.console.templates=/usr/share/prometheus/consoles"
     healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:9090"]
+      test: [ "CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:9090" ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -127,7 +127,7 @@ services:
       - ../../oci_deploy/monitoring/grafana_datasources.yml:/etc/grafana/provisioning/datasources/datasources.yml
       - grafana_data:/var/lib/grafana
     healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000"]
+      test: [ "CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000" ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -154,7 +154,7 @@ services:
       - "--config.file=/etc/alertmanager/alertmanager.yml"
       - "--storage.path=/alertmanager"
     healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:9093"]
+      test: [ "CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:9093" ]
       interval: 10s
       timeout: 5s
       retries: 5

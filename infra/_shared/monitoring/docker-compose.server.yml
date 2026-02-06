@@ -12,7 +12,7 @@ services:
     ports:
       - "5432:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -28,14 +28,14 @@ services:
     restart: unless-stopped
     environment:
       - OBSERVER_STANDALONE=1
-      - PYTHONPATH=/app/src:/app
-      - OBSERVER_DATA_DIR=/app/data/observer
-      - OBSERVER_LOG_DIR=/app/logs
-      - OBSERVER_SYSTEM_LOG_DIR=/app/logs/system
-      - OBSERVER_MAINTENANCE_LOG_DIR=/app/logs/maintenance
-      - OBSERVER_CONFIG_DIR=/app/config
-      - KIS_TOKEN_CACHE_DIR=/app/secrets/.kis_cache
-      - OBSERVER_ENV_FILE=/app/secrets/.env
+      - PYTHONPATH=/opt/platform/observer/src
+      - OBSERVER_DATA_DIR=/opt/platform/runtime/observer/data
+      - OBSERVER_LOG_DIR=/opt/platform/runtime/observer/logs
+      - OBSERVER_SYSTEM_LOG_DIR=/opt/platform/runtime/observer/logs/system
+      - OBSERVER_MAINTENANCE_LOG_DIR=/opt/platform/runtime/observer/logs/maintenance
+      - OBSERVER_CONFIG_DIR=/opt/platform/runtime/observer/config
+      - KIS_TOKEN_CACHE_DIR=/opt/platform/runtime/observer/data/cache
+      - OBSERVER_SNAPSHOT_DIR=/opt/platform/runtime/observer/universe
       - KIS_APP_KEY=${KIS_APP_KEY}
       - KIS_APP_SECRET=${KIS_APP_SECRET}
       - KIS_IS_VIRTUAL=${KIS_IS_VIRTUAL:-false}
@@ -47,10 +47,11 @@ services:
       - DB_NAME=observer
       - DB_PORT=5432
     volumes:
-      - ../../observer/data/observer:/app/data/observer
-      - ../../observer/logs:/app/logs
-      - ../../observer/config:/app/config
-      - ../../observer/secrets:/app/secrets
+      - ../../observer/data:/opt/platform/runtime/observer/data
+      - ../../observer/logs:/opt/platform/runtime/observer/logs
+      - ../../observer/config:/opt/platform/runtime/observer/config
+      - ../../observer/universe:/opt/platform/runtime/observer/universe
+      - ../../observer/secrets:/opt/platform/runtime/observer/secrets
     ports:
       - "8000:8000"
     depends_on:

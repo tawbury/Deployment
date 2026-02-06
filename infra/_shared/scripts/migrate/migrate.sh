@@ -10,8 +10,9 @@ echo "================================="
 echo ""
 
 # 데이터 확인
-SCALP_DIR="/app/config/observer/scalp"
-SWING_DIR="/app/config/observer/swing"
+# 데이터 확인 (Asset 디렉토리)
+SCALP_DIR="/opt/platform/runtime/observer/data/assets/scalp"
+SWING_DIR="/opt/platform/runtime/observer/data/assets/swing"
 
 echo "Checking data directories:"
 echo "  Scalp: $SCALP_DIR"
@@ -39,7 +40,7 @@ echo ""
 
 # Python 마이그레이션 스크립트 실행
 echo "Starting migration..."
-cd /app/src
+cd /opt/platform/observer/src
 python -m db.migrate_jsonl_to_db
 
 echo ""
