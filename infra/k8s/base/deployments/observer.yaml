@@ -106,6 +106,8 @@ spec:
               mountPath: /opt/platform/runtime/observer/logs
             - name: observer-universe
               mountPath: /opt/platform/runtime/observer/universe
+            - name: observer-symbols
+              mountPath: /opt/platform/runtime/observer/config/symbols
             - name: observer-config
               mountPath: /opt/platform/runtime/observer/config
               readOnly: false
