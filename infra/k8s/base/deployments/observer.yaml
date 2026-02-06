@@ -24,6 +24,39 @@ spec:
       securityContext:
         fsGroup: 1000
 
+      # PVC 디렉토리 사전 생성 (앱 코드에서 mkdir 제거 정책)
+      initContainers:
+        - name: init-dirs
+          image: busybox:1.37
+          command: ['sh', '-c']
+          args:
+            - |
+              echo "Creating PVC directory structure..."
+              # data PVC
+              mkdir -p /data/assets/scalp
+              mkdir -p /data/assets/swing
+              mkdir -p /data/assets/system
+              mkdir -p /data/symbols
+              mkdir -p /data/cache
+              mkdir -p /data/backup
+              mkdir -p /data/backups/archives
+              mkdir -p /data/backups/manifests
+              # logs PVC
+              mkdir -p /logs/system
+              mkdir -p /logs/maintenance
+              mkdir -p /logs/scalp
+              mkdir -p /logs/swing
+              mkdir -p /logs/universe
+              echo "Directory structure ready."
+          securityContext:
+            runAsUser: 1000
+            runAsGroup: 1000
+          volumeMounts:
+            - name: observer-data
+              mountPath: /data
+            - name: observer-logs
+              mountPath: /logs
+
       containers:
         - name: observer
           image: ghcr.io/tawbury/observer:build-20260203-032529
