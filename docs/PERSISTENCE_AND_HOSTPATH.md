@@ -13,7 +13,9 @@ Observer 앱의 **DB 데이터**와 **로그**가 서버 초기화(재설치·�
 현재 매니페스트는 **PersistentVolumeClaim**만 사용합니다. K3s 기본 StorageClass(`local-path`)를 쓰면 데이터는 보통 `/var/lib/rancher/k3s/storage/` 아래에 저장됩니다.
 
 - **observer-db-pvc**: PostgreSQL 전용 (10Gi). Postgres Deployment의 `/var/lib/postgresql/data`에 마운트되며, 실제 서버 `/home/ubuntu/data/db` 매핑 시 이 PVC를 해당 PV에 연결합니다.
-- **observer-logs-pvc**: Observer 앱 로그 (5Gi). Observer Deployment의 `/app/logs`에만 마운트됩니다.
+- **observer-logs-pvc**: Observer 앱 로그 (5Gi). Observer Deployment의 `/opt/platform/runtime/observer/logs`에 마운트됩니다.
+- **observer-data-pvc**: Observer JSONL 데이터 (20Gi). `/opt/platform/runtime/observer/data`에 마운트됩니다.
+- **observer-universe-pvc**: Universe 스냅샷 (1Gi). `/opt/platform/runtime/observer/universe`에 마운트됩니다.
 
 서버를 초기화하면 이 경로도 함께 날아갈 수 있으므로, **데이터를 반드시 호스트의 고정 경로에 두고 싶다면** 아래 HostPath 방식을 사용하세요.
 
@@ -116,10 +118,13 @@ spec:
 
 ## 3. 매핑 요약
 
-| 용도     | Pod / 컨테이너 마운트 경로        | 호스트 경로 (HostPath 사용 시)     | PVC 이름          |
-|----------|-----------------------------------|------------------------------------|-------------------|
-| DB/데이터 | Postgres: `/var/lib/postgresql/data` | /home/ubuntu/data/observer/db      | observer-db-pvc   |
-| 로그     | Observer: `/app/logs`             | /home/ubuntu/data/observer/logs    | observer-logs-pvc |
+| 용도 | Pod / 컨테이너 마운트 경로 | 호스트 경로 (HostPath 사용 시) | PVC 이름 |
+|------|--------------------------|-------------------------------|----------|
+| DB | Postgres: `/var/lib/postgresql/data` | /home/ubuntu/data/observer/db | observer-db-pvc |
+| JSONL 데이터 | Observer: `/opt/platform/runtime/observer/data` | /home/ubuntu/data/observer/data | observer-data-pvc |
+| 로그 | Observer: `/opt/platform/runtime/observer/logs` | /home/ubuntu/data/observer/logs | observer-logs-pvc |
+| Universe | Observer: `/opt/platform/runtime/observer/universe` | /home/ubuntu/data/observer/universe | observer-universe-pvc |
+| Config | Observer: `/opt/platform/runtime/observer/config` | hostPath 직접 (PVC 미사용) | N/A |
 
 ## 4. 보안 원칙
 
