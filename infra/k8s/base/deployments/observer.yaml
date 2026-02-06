@@ -128,4 +128,8 @@ spec:
           hostPath:
             path: /opt/platform/runtime/observer/config
             type: DirectoryOrCreate
+        - name: observer-symbols
+          hostPath:
+            path: /opt/platform/runtime/observer/config/symbols
+            type: DirectoryOrCreate
             # 향후 ConfigMap + PVC 조합으로 전환 권장
