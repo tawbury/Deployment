@@ -79,6 +79,11 @@ mcp-cli/
 .claude/
 .github/copilot-instructions.md
 CLAUDE.md
+tmpclaude-*
+.agent/
+docs/
+!docs/observer/
+!docs/qts/
 
 # -----------------------------------------------------------------------------
 # Project: app/observer

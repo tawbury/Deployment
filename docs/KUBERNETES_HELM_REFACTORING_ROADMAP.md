@@ -1,12 +1,32 @@
-# Kubernetes & Helm 기반 실행 계약 리팩토링 전체 로드맵
-
-**문서 버전**: 1.0
-**작성일**: 2026-02-05
-**대상 시스템**: Observer (KIS 실시간 시세 수집 시스템)
-**배포 환경**: OCI ARM K3s Cluster
-
 ---
 
+- **Document Type**: [문서 유형]
+- **Document ID**: ROADMAP-qts-001
+- **Title**: Kubernetes & Helm 기반 실행 계약 리팩토링 전체 로드맵
+- **Status**: Approved
+- **Created date**: 2026-02-05
+- **last Updated:**: 2026-02-05
+- **Author**: 
+- **Reviewer**: 
+- **Parent Document**: 
+- **Related Reference**: [[PHASE_0_CLUSTER_STATUS_GUIDE.md]], [[PHASE_0_VERIFICATION_REPORT.md]], [[finished_phase1.md]]
+- **Version**: 1.0.0
+
+- **대상 시스템**: Observer (KIS 실시간 시세 수집 시스템)
+- **배포 환경**: OCI ARM K3s Cluster
+
+---
+# Kubernetes & Helm 기반 실행 계약 리팩토링 전체 로드맵
+
+## 0. 서버 접속정보
+```bash
+# 오라클 클라우드 서버 설정
+Host oracle-obs-vm-01
+    HostName 134.185.117.22
+    User ubuntu
+    IdentityFile "C:\Users\tawbu\.ssh\oracle-obs-vm-01.key"
+    Port 22
+```
 ## 1. 로드맵의 목적과 철학
 
 ### 1.1 왜 지금 리팩토링이 필요한가
