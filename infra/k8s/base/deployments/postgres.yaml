@@ -28,7 +28,8 @@ spec:
               protocol: TCP
           envFrom:
             - secretRef:
-                name: observer-secrets  # POSTGRES_USER, POSTGRES_PASSWORD, POSTGRES_DB (가이드 참고)
+                name: obs-db-secret
+                optional: false  # POSTGRES_USER, POSTGRES_PASSWORD
           resources:
             requests:
               memory: "256Mi"

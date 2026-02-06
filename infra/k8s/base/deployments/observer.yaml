@@ -49,8 +49,14 @@ spec:
             - configMapRef:
                 name: observer-config
             - secretRef:
-                name: observer-secrets
+                name: obs-db-secret
                 optional: false
+            - secretRef:
+                name: obs-kis-secret
+                optional: false
+            - secretRef:
+                name: obs-kiwoom-secret
+                optional: true   # Kiwoom 미사용, 향후 활성화
 
           env:
             - name: POD_NAME
@@ -78,11 +84,11 @@ spec:
 
           readinessProbe:
             httpGet:
-              path: /health
+              path: /ready
               port: http
-            initialDelaySeconds: 5
-            periodSeconds: 5
-            timeoutSeconds: 3
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 5
             failureThreshold: 3
 
           resources:

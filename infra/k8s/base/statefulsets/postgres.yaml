@@ -54,7 +54,8 @@ spec:
 
           envFrom:
             - secretRef:
-                name: observer-secrets  # POSTGRES_USER, POSTGRES_PASSWORD, POSTGRES_DB
+                name: obs-db-secret
+                optional: false  # POSTGRES_USER, POSTGRES_PASSWORD
 
           env:
             - name: PGDATA
