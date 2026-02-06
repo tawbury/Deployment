@@ -10,7 +10,7 @@ namespace: observer-staging
 
 images:
   - name: ghcr.io/tawbury/observer
-    newTag: "build-20260207-033557"  # 배포 시 타임스탬프로 교체
+    newTag: "build-20260207-034202"  # 배포 시 타임스탬프로 교체
 
 commonLabels:
   environment: staging
