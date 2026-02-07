@@ -59,7 +59,47 @@ database:
   host: postgres
   port: 5432
   name: observer
-  # user/password는 Secret으로 주입 (obs-db-secret)
+  # user/password는 Secret으로 주입 (postgres.secretName)
+
+# ------------------------------------------------------------
+# 4.1 PostgreSQL StatefulSet Configuration
+# ------------------------------------------------------------
+postgres:
+  enabled: true
+  name: postgres
+
+  image:
+    repository: postgres
+    tag: "15-alpine"
+    pullPolicy: IfNotPresent
+
+  # Secret containing POSTGRES_USER and POSTGRES_PASSWORD
+  secretName: observer-secrets
+
+  resources:
+    requests:
+      memory: "256Mi"
+      cpu: "100m"
+    limits:
+      memory: "512Mi"
+      cpu: "500m"
+
+  persistence:
+    enabled: true
+    claimName: observer-db-pvc
+    size: 10Gi
+
+  probes:
+    liveness:
+      initialDelaySeconds: 30
+      periodSeconds: 10
+      timeoutSeconds: 5
+      failureThreshold: 6
+    readiness:
+      initialDelaySeconds: 5
+      periodSeconds: 5
+      timeoutSeconds: 3
+      failureThreshold: 3
 
 # ------------------------------------------------------------
 # 5. Paths Configuration (→ ConfigMap)
@@ -78,18 +118,25 @@ paths:
   appRoot: /app
 
 # ------------------------------------------------------------
-# 6. Secrets Reference (SealedSecret에서 생성됨)
+# 6. Secrets Reference
 # ------------------------------------------------------------
+# 현재 클러스터에서 수동 생성된 observer-secrets 사용
+# 향후 SealedSecrets로 마이그레이션 예정
 secrets:
-  db:
-    name: obs-db-sealed-secret
+  # 통합 secret (DB + KIS 자격증명)
+  main:
+    name: observer-secrets
     optional: false
-  kis:
-    name: obs-kis-sealed-secret
-    optional: false
-  kiwoom:
-    name: obs-kiwoom-sealed-secret
-    optional: true         # 향후 활성화
+  # 개별 SealedSecrets (향후 사용)
+  # db:
+  #   name: obs-db-sealed-secret
+  #   optional: false
+  # kis:
+  #   name: obs-kis-sealed-secret
+  #   optional: false
+  # kiwoom:
+  #   name: obs-kiwoom-sealed-secret
+  #   optional: true
 
 # ------------------------------------------------------------
 # 7. Probes Configuration

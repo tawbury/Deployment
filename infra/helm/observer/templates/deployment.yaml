@@ -108,14 +108,8 @@ spec:
             - configMapRef:
                 name: {{ include "observer.configMapName" . }}
             - secretRef:
-                name: {{ .Values.secrets.db.name }}
-                optional: {{ .Values.secrets.db.optional }}
-            - secretRef:
-                name: {{ .Values.secrets.kis.name }}
-                optional: {{ .Values.secrets.kis.optional }}
-            - secretRef:
-                name: {{ .Values.secrets.kiwoom.name }}
-                optional: {{ .Values.secrets.kiwoom.optional }}
+                name: {{ .Values.secrets.main.name }}
+                optional: {{ .Values.secrets.main.optional }}
 
           env:
             - name: POD_NAME

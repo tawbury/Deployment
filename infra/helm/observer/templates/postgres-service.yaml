@@ -1,0 +1,41 @@
+# templates/postgres-service.yaml
+# ============================================================
+# PostgreSQL Services
+# ============================================================
+{{- if .Values.postgres.enabled }}
+# Headless Service for StatefulSet
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.postgres.name }}-headless
+  labels:
+    {{- include "observer.labels" . | nindent 4 }}
+    app.kubernetes.io/component: database
+spec:
+  clusterIP: None
+  ports:
+    - name: postgres
+      port: 5432
+      targetPort: postgres
+      protocol: TCP
+  selector:
+    app: {{ .Values.postgres.name }}
+---
+# ClusterIP Service for application access
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.postgres.name }}
+  labels:
+    {{- include "observer.labels" . | nindent 4 }}
+    app.kubernetes.io/component: database
+spec:
+  type: ClusterIP
+  ports:
+    - name: postgres
+      port: 5432
+      targetPort: postgres
+      protocol: TCP
+  selector:
+    app: {{ .Values.postgres.name }}
+{{- end }}

@@ -1,23 +1,56 @@
+# templates/pvc.yaml
+# ============================================================
+# Persistent Volume Claims
+# ============================================================
+
+# Observer Data PVC
+{{- if .Values.persistence.data.enabled }}
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: observer-data-pvc
+  name: {{ .Values.persistence.data.claimName }}
   namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "observer.labels" . | nindent 4 }}
 spec:
   accessModes:
     - ReadWriteOnce
   resources:
     requests:
-      storage: 1Gi
+      storage: {{ .Values.persistence.data.size }}
+{{- end }}
 ---
+# Observer Logs PVC
+{{- if .Values.persistence.logs.enabled }}
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: observer-logs-pvc
+  name: {{ .Values.persistence.logs.claimName }}
   namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "observer.labels" . | nindent 4 }}
 spec:
   accessModes:
     - ReadWriteOnce
   resources:
     requests:
-      storage: 1Gi
+      storage: {{ .Values.persistence.logs.size }}
+{{- end }}
+---
+# PostgreSQL Data PVC
+{{- if and .Values.postgres.enabled .Values.postgres.persistence.enabled }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ .Values.postgres.persistence.claimName }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "observer.labels" . | nindent 4 }}
+    app.kubernetes.io/component: database
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: {{ .Values.postgres.persistence.size }}
+{{- end }}
