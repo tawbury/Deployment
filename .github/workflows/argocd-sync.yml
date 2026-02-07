@@ -1,0 +1,58 @@
+# ArgoCD Sync Workflow
+# Triggers ArgoCD sync via SSH to the K8s cluster
+# Called after image tag update in values.yaml
+
+name: ArgoCD Sync
+
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - 'infra/helm/observer/values.yaml'
+  workflow_dispatch:
+    inputs:
+      app_name:
+        description: "ArgoCD app name to sync"
+        required: false
+        default: "observer-prod"
+
+env:
+  ARGOCD_APP: observer-prod
+
+jobs:
+  sync:
+    name: Sync ArgoCD Application
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Trigger ArgoCD Sync via SSH
+        run: |
+          APP_NAME="${{ github.event.inputs.app_name || env.ARGOCD_APP }}"
+
+          ssh -i ~/.ssh/id_rsa ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'EOF'
+            # ArgoCD sync
+            argocd app sync $APP_NAME --prune || true
+
+            # Wait for sync to complete (max 5 minutes)
+            argocd app wait $APP_NAME --timeout 300 || true
+
+            # Get final status
+            argocd app get $APP_NAME
+          EOF
+
+      - name: Summary
+        run: |
+          echo "✅ ArgoCD sync triggered for ${{ env.ARGOCD_APP }}"
+          echo "Check ArgoCD dashboard for deployment status."
