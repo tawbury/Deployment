@@ -39,6 +39,7 @@ spec:
               mkdir -p /data/symbols
               mkdir -p /data/cache
               mkdir -p /data/backup
+              mkdir -p /data/universe
               mkdir -p /data/backups/archives
               mkdir -p /data/backups/manifests
               # logs PVC
@@ -104,6 +105,8 @@ spec:
               value: "Asia/Seoul"  # 타임존 강제 고정
             - name: PYTHONUNBUFFERED
               value: "1"          # 실시간 로그 확인을 위해 버퍼링 해제
+            - name: OBSERVER_SNAPSHOT_DIR
+              value: "/opt/platform/runtime/observer/data/universe"
 
           # Observer 헬스체크
           livenessProbe:
