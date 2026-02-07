@@ -29,7 +29,7 @@ spec:
         fsGroup: {{ .Values.securityContext.pod.fsGroup }}
 
       # --------------------------------------------------------
-      # Init Container: PVC 디렉토리 사전 생성
+      # Init Container: PVC 디렉토리 사전 생성 + 심볼릭 링크
       # --------------------------------------------------------
       initContainers:
         - name: init-dirs
@@ -37,7 +37,7 @@ spec:
           command: ['sh', '-c']
           args:
             - |
-              echo "Creating PVC directory structure..."
+              echo "=== Phase 1: Creating directory structure ==="
               # data PVC (mounted at {{ .Values.paths.dataDir }})
               mkdir -p {{ .Values.paths.dataDir }}/assets/scalp
               mkdir -p {{ .Values.paths.dataDir }}/assets/swing
@@ -54,7 +54,17 @@ spec:
               mkdir -p {{ .Values.paths.logDir }}/scalp
               mkdir -p {{ .Values.paths.logDir }}/swing
               mkdir -p {{ .Values.paths.logDir }}/universe
-              echo "Directory structure ready."
+
+              echo "=== Phase 2: Creating backward-compat symlinks ==="
+              # Create symlinks at /opt/platform/runtime/observer for user convenience
+              ln -sf {{ .Values.paths.dataDir }} {{ .Values.paths.legacyRoot }}/data
+              ln -sf {{ .Values.paths.logDir }} {{ .Values.paths.legacyRoot }}/logs
+              ln -sf {{ .Values.paths.configDir }} {{ .Values.paths.legacyRoot }}/config
+
+              echo "Symlinks created:"
+              ls -la {{ .Values.paths.legacyRoot }}/
+
+              echo "=== Init complete ==="
           securityContext:
             runAsUser: {{ .Values.securityContext.container.runAsUser }}
             runAsGroup: {{ .Values.securityContext.container.runAsGroup }}
@@ -63,6 +73,10 @@ spec:
               mountPath: {{ .Values.paths.dataDir }}
             - name: observer-logs
               mountPath: {{ .Values.paths.logDir }}
+            - name: legacy-compat
+              mountPath: {{ .Values.paths.legacyRoot }}
+            - name: tmp
+              mountPath: /tmp
 
       # --------------------------------------------------------
       # Main Container
@@ -163,6 +177,10 @@ spec:
             - name: observer-config
               mountPath: {{ .Values.paths.configDir }}
               readOnly: false
+            - name: tmp
+              mountPath: /tmp
+            - name: legacy-compat
+              mountPath: {{ .Values.paths.legacyRoot }}
 
       terminationGracePeriodSeconds: 30
 
@@ -188,3 +206,9 @@ spec:
           hostPath:
             path: {{ .Values.persistence.config.hostPath }}
             type: DirectoryOrCreate
+        # emptyDir for /tmp (required for readOnlyRootFilesystem)
+        - name: tmp
+          emptyDir: {}
+        # emptyDir for legacy symlinks at /opt/platform/runtime/observer
+        - name: legacy-compat
+          emptyDir: {}

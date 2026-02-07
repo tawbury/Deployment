@@ -66,14 +66,16 @@ database:
 # ------------------------------------------------------------
 paths:
   # 컨테이너 내부 경로 (PVC volumeMount와 일치해야 함)
-  runtimeRoot: /opt/platform/runtime/observer
-  dataDir: /opt/platform/runtime/observer/data
-  logDir: /opt/platform/runtime/observer/logs
-  configDir: /opt/platform/runtime/observer/config
-  systemLogDir: /opt/platform/runtime/observer/logs/system
-  maintenanceLogDir: /opt/platform/runtime/observer/logs/maintenance
-  snapshotDir: /opt/platform/runtime/observer/data/universe
-  tokenCacheDir: /opt/platform/runtime/observer/data/cache
+  runtimeRoot: /app
+  dataDir: /app/data
+  logDir: /app/logs
+  configDir: /app/config
+  systemLogDir: /app/logs/system
+  maintenanceLogDir: /app/logs/maintenance
+  snapshotDir: /app/data/universe
+  tokenCacheDir: /app/data/cache
+  # Backward compatibility symlink target (사용자 편의)
+  legacyRoot: /opt/platform/runtime/observer
 
 # ------------------------------------------------------------
 # 6. Secrets Reference (SealedSecret에서 생성됨)
@@ -141,7 +143,7 @@ securityContext:
     runAsUser: 1000
     runAsGroup: 1000
     runAsNonRoot: true
-    readOnlyRootFilesystem: false
+    readOnlyRootFilesystem: true
     allowPrivilegeEscalation: false
 
 # ------------------------------------------------------------
