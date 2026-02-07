@@ -200,11 +200,11 @@ persistence:
   data:
     enabled: true
     claimName: observer-data-pvc
-    size: 20Gi
+    size: 1Gi    # 기존 PVC 크기 유지 (리사이즈 불가)
   logs:
     enabled: true
     claimName: observer-logs-pvc
-    size: 5Gi
+    size: 1Gi    # 기존 PVC 크기 유지 (리사이즈 불가)
   # config는 hostPath 사용 (symbols 파일 영속성)
   config:
     hostPath: /opt/platform/runtime/observer/config
