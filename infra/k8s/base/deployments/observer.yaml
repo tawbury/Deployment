@@ -137,8 +137,6 @@ spec:
               mountPath: /opt/platform/runtime/observer/data
             - name: observer-logs
               mountPath: /opt/platform/runtime/observer/logs
-            - name: observer-universe
-              mountPath: /opt/platform/runtime/observer/data/universe
             - name: observer-symbols
               mountPath: /opt/platform/runtime/observer/config/symbols
             - name: observer-config
@@ -154,9 +152,6 @@ spec:
         - name: observer-logs
           persistentVolumeClaim:
             claimName: observer-logs-pvc
-        - name: observer-universe
-          persistentVolumeClaim:
-            claimName: observer-universe-pvc
         - name: observer-config
           hostPath:
             path: /opt/platform/runtime/observer/config
