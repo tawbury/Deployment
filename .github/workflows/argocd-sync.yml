@@ -40,8 +40,17 @@ jobs:
       - name: Trigger ArgoCD Sync via SSH
         run: |
           APP_NAME="${{ github.event.inputs.app_name || env.ARGOCD_APP }}"
-
+          
           ssh -i ~/.ssh/id_rsa ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << EOF
+            # Ensure ArgoCD CLI is available
+            if ! command -v argocd &> /dev/null; then
+                echo "argocd command not found. Installing locally..."
+                mkdir -p ~/bin
+                curl -sSL -o ~/bin/argocd https://github.com/argoproj/argo-cd/releases/latest/download/argocd-linux-amd64
+                chmod +x ~/bin/argocd
+                export PATH=\$HOME/bin:\$PATH
+            fi
+
             # ArgoCD sync
             argocd app sync ${APP_NAME} --prune || true
 
