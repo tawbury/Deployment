@@ -2,7 +2,7 @@ apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: observer-data-pvc
-  namespace: observer
+  namespace: {{ .Release.Namespace }}
 spec:
   accessModes:
     - ReadWriteOnce
@@ -14,7 +14,7 @@ apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: observer-logs-pvc
-  namespace: observer
+  namespace: {{ .Release.Namespace }}
 spec:
   accessModes:
     - ReadWriteOnce
