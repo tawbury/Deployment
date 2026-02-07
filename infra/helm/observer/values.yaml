@@ -65,17 +65,17 @@ database:
 # 5. Paths Configuration (→ ConfigMap)
 # ------------------------------------------------------------
 paths:
-  # 컨테이너 내부 경로 (PVC volumeMount와 일치해야 함)
-  runtimeRoot: /app
-  dataDir: /app/data
-  logDir: /app/logs
-  configDir: /app/config
-  systemLogDir: /app/logs/system
-  maintenanceLogDir: /app/logs/maintenance
-  snapshotDir: /app/data/universe
-  tokenCacheDir: /app/data/cache
-  # Backward compatibility symlink target (사용자 편의)
-  legacyRoot: /opt/platform/runtime/observer
+  # PVC 마운트 경로 (관리용 기본 경로)
+  runtimeRoot: /opt/platform/runtime/observer
+  dataDir: /opt/platform/runtime/observer/data
+  logDir: /opt/platform/runtime/observer/logs
+  configDir: /opt/platform/runtime/observer/config
+  systemLogDir: /opt/platform/runtime/observer/logs/system
+  maintenanceLogDir: /opt/platform/runtime/observer/logs/maintenance
+  snapshotDir: /opt/platform/runtime/observer/data/universe
+  tokenCacheDir: /opt/platform/runtime/observer/data/cache
+  # 앱 호환성 symlink (/app/* → /opt/platform/runtime/observer/*)
+  appRoot: /app
 
 # ------------------------------------------------------------
 # 6. Secrets Reference (SealedSecret에서 생성됨)
