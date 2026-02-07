@@ -10,7 +10,7 @@ namespace: observer-prod
 
 images:
   - name: ghcr.io/tawbury/observer
-    newTag: build-20260207-135644
+    newTag: build-20260207-140602
 
 commonLabels:
   environment: production
