@@ -1,7 +1,0 @@
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: observer
-  labels:
-    app.kubernetes.io/name: observer
-    app.kubernetes.io/component: observer

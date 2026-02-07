@@ -1,0 +1,41 @@
+# infra/helm/observer/values-prod.yaml
+# ============================================================
+# Production Environment Overrides
+# ============================================================
+# 이 파일은 운영 환경에서 values.yaml을 override합니다.
+# helm install -f values.yaml -f values-prod.yaml observer .
+# ============================================================
+
+app:
+  env: production
+  logLevel: INFO
+  logFormat: json
+
+observer:
+  swingIntervalMinutes: 5
+  scalpMaxSlots: 41
+  minSymbolCount: 2500
+  minPrice: 4000
+
+resources:
+  requests:
+    memory: "512Mi"
+    cpu: "250m"
+  limits:
+    memory: "2Gi"
+    cpu: "2000m"
+
+probes:
+  startup:
+    initialDelaySeconds: 15
+    failureThreshold: 40   # 최대 200초 대기 (운영 부트스트래핑 시간 고려)
+  liveness:
+    initialDelaySeconds: 60
+    periodSeconds: 30
+    failureThreshold: 3
+  readiness:
+    initialDelaySeconds: 20
+    periodSeconds: 15
+
+# 운영 환경 복제본 (필요 시 조정)
+replicaCount: 1

@@ -1,0 +1,186 @@
+# =============================================================================
+# QTS + Observer Integration Testing Environment
+# =============================================================================
+# Usage:
+#   cd d:/development/deployment/infra/docker/compose
+#   docker-compose -f docker-compose.integration.yml up -d
+#   docker-compose -f docker-compose.integration.yml logs -f qts
+#   docker-compose -f docker-compose.integration.yml down -v
+# =============================================================================
+
+version: '3.8'
+
+services:
+  # ===========================================================================
+  # PostgreSQL Database
+  # ===========================================================================
+  db:
+    image: postgres:15-alpine
+    container_name: integration-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: integration_db_pwd
+      POSTGRES_DB: observer
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - integration-network
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # ===========================================================================
+  # Observer Service (Real-time Market Data)
+  # ===========================================================================
+  obs:
+    image: ghcr.io/tawbury/observer:latest
+    container_name: integration-observer
+    restart: unless-stopped
+    env_file:
+      - ../../../../prj_obs/config/.env.shared
+      - ../../../../prj_obs/config/.env.container
+    environment:
+      # Core settings
+      OBSERVER_STANDALONE: "1"
+      RUN_MODE: container
+      TZ: Asia/Seoul
+      PYTHONPATH: /opt/platform/observer/src
+      # Path settings
+      OBSERVER_DATA_DIR: /opt/platform/runtime/observer/data
+      OBSERVER_LOG_DIR: /opt/platform/runtime/observer/logs
+      OBSERVER_SYSTEM_LOG_DIR: /opt/platform/runtime/observer/logs/system
+      OBSERVER_MAINTENANCE_LOG_DIR: /opt/platform/runtime/observer/logs/maintenance
+      OBSERVER_CONFIG_DIR: /opt/platform/runtime/observer/config
+      OBSERVER_SNAPSHOT_DIR: /opt/platform/runtime/observer/data/universe
+      KIS_TOKEN_CACHE_DIR: /opt/platform/runtime/observer/data/cache
+      # Database settings
+      DB_HOST: db
+      DB_PORT: "5432"
+      DB_USER: postgres
+      DB_PASSWORD: integration_db_pwd
+      DB_NAME: observer
+    volumes:
+      - observer_data:/opt/platform/runtime/observer/data
+      - observer_logs:/opt/platform/runtime/observer/logs
+    ports:
+      - "8000:8000"
+    networks:
+      - integration-network
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: [ "CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=5)" ]
+      interval: 30s
+      timeout: 10s
+      start_period: 60s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+        reservations:
+          cpus: '0.5'
+          memory: 256M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # ===========================================================================
+  # QTS Service (ETEDA Pipeline Trading System)
+  # ===========================================================================
+  qts:
+    build:
+      context: ../../../../prj_qts
+      dockerfile: Dockerfile
+    image: qts:local
+    container_name: integration-qts
+    restart: unless-stopped
+    env_file:
+      - ../../../../prj_qts/config/.env.shared
+      - ../../../../prj_qts/config/.env.container
+    environment:
+      # Core settings
+      RUN_MODE: container
+      TZ: Asia/Seoul
+      QTS_ENV: integration
+      PYTHONPATH: /opt/platform/qts
+      # Path settings
+      QTS_DATA_DIR: /opt/platform/runtime/qts/data
+      QTS_LOG_DIR: /opt/platform/runtime/qts/logs
+      QTS_CONFIG_DIR: /opt/platform/runtime/qts/config
+      # Observer HTTP Integration (실제 API 통신)
+      OBSERVER_CLIENT_TYPE: http
+      OBSERVER_API_URL: http://obs:8000
+      OBSERVER_DATA_DIR: /opt/platform/runtime/observer/data
+      # Database settings
+      DB_HOST: db
+      DB_PORT: "5432"
+      DB_USER: postgres
+      DB_PASSWORD: integration_db_pwd
+      DB_NAME: observer
+      # Google Sheets (disabled for integration test)
+      GOOGLE_SHEETS_ENABLED: "false"
+    volumes:
+      # QTS runtime directories
+      - qts_data:/opt/platform/runtime/qts/data
+      - qts_logs:/opt/platform/runtime/qts/logs
+      # Shared Observer data (read-only for QTS)
+      - observer_data:/opt/platform/runtime/observer/data:ro
+    networks:
+      - integration-network
+    depends_on:
+      obs:
+        condition: service_healthy
+      db:
+        condition: service_healthy
+    command: [ "python", "-m", "app.main", "--local-only", "--max-iterations", "100", "--verbose" ]
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+        reservations:
+          cpus: '0.25'
+          memory: 128M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+# =============================================================================
+# Networks
+# =============================================================================
+networks:
+  integration-network:
+    driver: bridge
+    name: integration-network
+
+# =============================================================================
+# Volumes
+# =============================================================================
+volumes:
+  postgres_data:
+    name: integration-postgres-data
+  observer_data:
+    name: integration-observer-data
+  observer_logs:
+    name: integration-observer-logs
+  qts_data:
+    name: integration-qts-data
+  qts_logs:
+    name: integration-qts-logs

@@ -1,0 +1,62 @@
+# templates/configmap.yaml
+# ============================================================
+# Observer ConfigMap - 앱 실행에 필요한 모든 비밀이 아닌 설정
+# ============================================================
+# 책임 범위:
+#   - 실행 환경 설정 (LOG_LEVEL, APP_ENV, TZ)
+#   - 런타임 경로 (OBSERVER_*_DIR)
+#   - 외부 의존성 엔드포인트 (DB_HOST, DB_PORT - 비밀번호 제외)
+#   - Observer 런타임 파라미터
+#
+# 제외 항목 (Secret으로 위임):
+#   - API Key (KIS_APP_KEY, KIS_APP_SECRET)
+#   - DB Password (DB_PASSWORD, POSTGRES_PASSWORD)
+#   - 개인 토큰
+# ============================================================
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "observer.configMapName" . }}
+  labels:
+    {{- include "observer.labels" . | nindent 4 }}
+data:
+  # --------------------------------------------------------
+  # Application Environment
+  # --------------------------------------------------------
+  APP_ENV: {{ .Values.app.env | quote }}
+  LOG_LEVEL: {{ .Values.app.logLevel | quote }}
+  LOG_FORMAT: {{ .Values.app.logFormat | quote }}
+  TZ: {{ .Values.app.timezone | quote }}
+  SERVICE_PORT: {{ .Values.app.servicePort | quote }}
+  OBSERVER_STANDALONE: {{ if .Values.app.standalone }}"1"{{ else }}"0"{{ end }}
+  PYTHONUNBUFFERED: "1"
+
+  # --------------------------------------------------------
+  # Database (non-secret values only)
+  # --------------------------------------------------------
+  DB_HOST: {{ .Values.database.host | quote }}
+  DB_PORT: {{ .Values.database.port | quote }}
+  DB_NAME: {{ .Values.database.name | quote }}
+
+  # --------------------------------------------------------
+  # Runtime Paths (must match volumeMounts)
+  # --------------------------------------------------------
+  PLATFORM_RUNTIME_ROOT: {{ .Values.paths.runtimeRoot | quote }}
+  OBSERVER_DATA_DIR: {{ .Values.paths.dataDir | quote }}
+  OBSERVER_LOG_DIR: {{ .Values.paths.logDir | quote }}
+  OBSERVER_CONFIG_DIR: {{ .Values.paths.configDir | quote }}
+  OBSERVER_SYSTEM_LOG_DIR: {{ .Values.paths.systemLogDir | quote }}
+  OBSERVER_MAINTENANCE_LOG_DIR: {{ .Values.paths.maintenanceLogDir | quote }}
+  OBSERVER_SNAPSHOT_DIR: {{ .Values.paths.snapshotDir | quote }}
+  KIS_TOKEN_CACHE_DIR: {{ .Values.paths.tokenCacheDir | quote }}
+
+  # --------------------------------------------------------
+  # Observer Runtime Settings
+  # --------------------------------------------------------
+  OBSERVER_SWING_INTERVAL_MINUTES: {{ .Values.observer.swingIntervalMinutes | quote }}
+  OBSERVER_SCALP_MAX_SLOTS: {{ .Values.observer.scalpMaxSlots | quote }}
+  OBSERVER_TRADING_START_TIME: {{ .Values.observer.tradingStartTime | quote }}
+  OBSERVER_TRADING_END_TIME: {{ .Values.observer.tradingEndTime | quote }}
+  OBSERVER_MARKET: {{ .Values.observer.market | quote }}
+  OBSERVER_MIN_SYMBOL_COUNT: {{ .Values.observer.minSymbolCount | quote }}
+  OBSERVER_MIN_PRICE: {{ .Values.observer.minPrice | quote }}
