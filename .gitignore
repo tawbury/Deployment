@@ -105,6 +105,7 @@ app/observer/config/universe/*.json
 app/observer/*.tar
 app/observer/*.tar.gz
 app/observer/*.tar.bak
+**/qts/
 
 # -----------------------------------------------------------------------------
 # Project: infra & ops
