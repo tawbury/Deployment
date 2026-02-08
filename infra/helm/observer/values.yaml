@@ -11,7 +11,7 @@
 # ------------------------------------------------------------
 image:
   repository: ghcr.io/tawbury/observer
-  tag: build-20260208-200034
+  tag: build-20260208-213119
   pullPolicy: Always
 
 imagePullSecrets:
