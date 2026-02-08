@@ -38,28 +38,42 @@ jobs:
           ssh-keyscan -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
 
       - name: Trigger ArgoCD Sync via SSH
+        env:
+          TARGET_APP: ${{ github.event.inputs.app_name || env.ARGOCD_APP }}
         run: |
-          APP_NAME="${{ github.event.inputs.app_name || env.ARGOCD_APP }}"
-          
-          ssh -i ~/.ssh/id_rsa ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << EOF
+          ssh -i ~/.ssh/id_rsa ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} bash -s "$TARGET_APP" << 'REMOTE_SCRIPT'
+            APP_NAME="$1"
+            echo "Syncing ArgoCD app: $APP_NAME"
+
             # Ensure ArgoCD CLI is available
             if ! command -v argocd &> /dev/null; then
                 echo "argocd command not found. Installing locally..."
                 mkdir -p ~/bin
-                curl -sSL -o ~/bin/argocd https://github.com/argoproj/argo-cd/releases/latest/download/argocd-linux-amd64
+
+                # 아키텍처 감지 (ARM64 클러스터 대응)
+                ARCH=$(uname -m)
+                case $ARCH in
+                    x86_64)  ARGOCD_ARCH="amd64" ;;
+                    aarch64) ARGOCD_ARCH="arm64" ;;
+                    arm64)   ARGOCD_ARCH="arm64" ;;
+                    *)       echo "Unsupported architecture: $ARCH"; exit 1 ;;
+                esac
+
+                echo "Detected architecture: $ARCH -> downloading argocd-linux-$ARGOCD_ARCH"
+                curl -sSL -o ~/bin/argocd "https://github.com/argoproj/argo-cd/releases/latest/download/argocd-linux-${ARGOCD_ARCH}"
                 chmod +x ~/bin/argocd
-                export PATH=\$HOME/bin:\$PATH
             fi
+            export PATH=$HOME/bin:$PATH
 
             # ArgoCD sync
-            argocd app sync ${APP_NAME} --prune || true
+            argocd app sync "$APP_NAME" --prune || true
 
             # Wait for sync to complete (max 5 minutes)
-            argocd app wait ${APP_NAME} --timeout 300 || true
+            argocd app wait "$APP_NAME" --timeout 300 || true
 
             # Get final status
-            argocd app get ${APP_NAME}
-          EOF
+            argocd app get "$APP_NAME"
+          REMOTE_SCRIPT
 
       - name: Summary
         run: |
