@@ -119,9 +119,12 @@ secrets:
 # 7. Probes Configuration
 # ------------------------------------------------------------
 probes:
+  # NOTE: QTS is a pipeline app without HTTP server
+  # Probes disabled until health endpoints are implemented
+
   # Startup Probe: 초기화 완료 확인
   startup:
-    enabled: true
+    enabled: false
     path: /health
     initialDelaySeconds: 10
     periodSeconds: 5
@@ -130,7 +133,7 @@ probes:
 
   # Liveness Probe: 메인 루프 살아있는지 확인
   liveness:
-    enabled: true
+    enabled: false
     path: /health
     initialDelaySeconds: 30
     periodSeconds: 20
@@ -139,7 +142,7 @@ probes:
 
   # Readiness Probe: 외부 의존성 연결 완료 확인
   readiness:
-    enabled: true
+    enabled: false
     path: /ready
     initialDelaySeconds: 10
     periodSeconds: 10
