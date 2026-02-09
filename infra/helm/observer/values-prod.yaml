@@ -40,5 +40,6 @@ probes:
     initialDelaySeconds: 20
     periodSeconds: 15
 
-# 운영 환경 복제본 (필요 시 조정)
-replicaCount: 1
+# 운영 환경 복제본 - HA를 위해 2개 운영
+# NOTE: RWO PVC는 단일 노드에서만 동작하므로 multi-node 클러스터 전환 시 RWX 필요
+replicaCount: 2
