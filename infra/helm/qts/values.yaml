@@ -1,0 +1,187 @@
+# infra/helm/qts/values.yaml
+# ============================================================
+# QTS Helm Chart - Source of Truth
+# ============================================================
+# 이 파일은 ConfigMap, Deployment, Probes의 단일 설정 원천입니다.
+# Secret 값은 qts-secrets로 별도 관리됩니다.
+# ============================================================
+
+# ------------------------------------------------------------
+# 1. Image Configuration
+# ------------------------------------------------------------
+image:
+  repository: ghcr.io/tawbury/qts
+  tag: latest
+  pullPolicy: Always
+
+imagePullSecrets:
+  - name: ghcr-secret
+
+# ------------------------------------------------------------
+# 2. Application Environment (→ ConfigMap)
+# ------------------------------------------------------------
+app:
+  # 실행 환경
+  env: production           # production | development | staging
+  logLevel: INFO            # DEBUG | INFO | WARNING | ERROR
+  logFormat: json           # json | text
+  timezone: Asia/Seoul
+
+  # 배포 모드
+  deploymentMode: kubernetes  # local | docker | kubernetes
+
+  # 서비스 포트
+  servicePort: 8001
+
+# ------------------------------------------------------------
+# 3. QTS Runtime Settings (→ ConfigMap)
+# ------------------------------------------------------------
+qts:
+  # Broker 설정
+  brokerType: kiwoom         # kis | kiwoom
+  tradingMode: PAPER         # PAPER | REAL
+  enableRealOrder: "N"       # Y | N (안전 스위치)
+
+  # Pipeline 설정
+  pipelineIntervalMs: 1000
+  pipelineErrorBackoffMs: 5000
+
+  # Safety Layer
+  pipelinePaused: "false"
+  killSwitchEnabled: "true"
+  failsafeEnabled: "true"
+
+  # Observer 연동
+  observerType: file         # stub | file | uds
+  observerDataReadOnly: "true"
+
+# ------------------------------------------------------------
+# 4. Database Configuration (→ ConfigMap, non-secret only)
+# ------------------------------------------------------------
+database:
+  host: postgres
+  port: 5432
+  name: qts
+  # user/password는 Secret으로 주입
+
+# ------------------------------------------------------------
+# 4.1 PostgreSQL (QTS 전용 DB는 Observer와 공유 또는 별도 구성)
+# ------------------------------------------------------------
+postgres:
+  enabled: false  # Observer의 postgres를 공유하거나 별도 설정
+  name: postgres
+
+# ------------------------------------------------------------
+# 5. Paths Configuration (→ ConfigMap)
+# ------------------------------------------------------------
+paths:
+  # Platform paths
+  codeRoot: /opt/platform/qts
+  runtimeRoot: /opt/platform/runtime/qts
+
+  # QTS 런타임 경로
+  dataDir: /opt/platform/runtime/qts/data
+  logDir: /opt/platform/runtime/qts/logs
+  configDir: /opt/platform/runtime/qts/config
+
+  # Observer 데이터 소스 (읽기 전용 마운트)
+  observerDataDir: /opt/platform/runtime/observer/data
+
+# ------------------------------------------------------------
+# 6. Secrets Reference
+# ------------------------------------------------------------
+secrets:
+  # 통합 secret (DB + Broker 자격증명)
+  main:
+    name: qts-secrets
+    optional: false
+  # 외부 Secret 사용 여부 (true = 클러스터에서 수동 생성)
+  useExternalSecret: true
+
+# ------------------------------------------------------------
+# 7. Probes Configuration
+# ------------------------------------------------------------
+probes:
+  # Startup Probe: 초기화 완료 확인
+  startup:
+    enabled: true
+    path: /health
+    initialDelaySeconds: 10
+    periodSeconds: 5
+    timeoutSeconds: 3
+    failureThreshold: 30   # 최대 150초 대기
+
+  # Liveness Probe: 메인 루프 살아있는지 확인
+  liveness:
+    enabled: true
+    path: /health
+    initialDelaySeconds: 30
+    periodSeconds: 20
+    timeoutSeconds: 5
+    failureThreshold: 5
+
+  # Readiness Probe: 외부 의존성 연결 완료 확인
+  readiness:
+    enabled: true
+    path: /ready
+    initialDelaySeconds: 10
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 3
+
+# ------------------------------------------------------------
+# 8. Resources
+# ------------------------------------------------------------
+resources:
+  requests:
+    memory: "512Mi"
+    cpu: "250m"
+  limits:
+    memory: "2Gi"
+    cpu: "1000m"
+
+# ------------------------------------------------------------
+# 9. Security Context
+# ------------------------------------------------------------
+securityContext:
+  pod:
+    fsGroup: 1000
+  container:
+    runAsUser: 1000
+    runAsGroup: 1000
+    runAsNonRoot: true
+    readOnlyRootFilesystem: true
+    allowPrivilegeEscalation: false
+
+# ------------------------------------------------------------
+# 10. Persistence (PVC)
+# ------------------------------------------------------------
+persistence:
+  data:
+    enabled: true
+    claimName: qts-data-pvc
+    size: 5Gi
+    accessMode: ReadWriteOnce
+  logs:
+    enabled: true
+    claimName: qts-logs-pvc
+    size: 2Gi
+    accessMode: ReadWriteOnce
+  # Observer 데이터 공유 (hostPath - 읽기 전용)
+  observerData:
+    enabled: true
+    hostPath: /opt/platform/runtime/observer/data
+    readOnly: true
+
+# ------------------------------------------------------------
+# 11. Service
+# ------------------------------------------------------------
+service:
+  type: ClusterIP
+  port: 8001
+  targetPort: 8001
+
+# ------------------------------------------------------------
+# 12. Replicas
+# ------------------------------------------------------------
+replicaCount: 1

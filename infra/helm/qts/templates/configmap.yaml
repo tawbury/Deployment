@@ -1,0 +1,68 @@
+# templates/configmap.yaml
+# ============================================================
+# QTS ConfigMap - 앱 실행에 필요한 모든 비밀이 아닌 설정
+# ============================================================
+# 책임 범위:
+#   - 실행 환경 설정 (LOG_LEVEL, APP_ENV, TZ)
+#   - 런타임 경로 (QTS_*_DIR)
+#   - 외부 의존성 엔드포인트 (DB_HOST, DB_PORT - 비밀번호 제외)
+#   - QTS 런타임 파라미터
+#
+# 제외 항목 (Secret으로 위임):
+#   - Broker Key (KIWOOM_*, KIS_*)
+#   - DB Password (DB_PASSWORD)
+# ============================================================
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "qts.configMapName" . }}
+  labels:
+    {{- include "qts.labels" . | nindent 4 }}
+data:
+  # --------------------------------------------------------
+  # Application Environment
+  # --------------------------------------------------------
+  APP_ENV: {{ .Values.app.env | quote }}
+  LOG_LEVEL: {{ .Values.app.logLevel | quote }}
+  LOG_FORMAT: {{ .Values.app.logFormat | quote }}
+  TZ: {{ .Values.app.timezone | quote }}
+  SERVICE_PORT: {{ .Values.app.servicePort | quote }}
+  QTS_DEPLOYMENT_MODE: {{ .Values.app.deploymentMode | quote }}
+  PYTHONUNBUFFERED: "1"
+
+  # --------------------------------------------------------
+  # Database (non-secret values only)
+  # --------------------------------------------------------
+  DB_HOST: {{ .Values.database.host | quote }}
+  DB_PORT: {{ .Values.database.port | quote }}
+  DB_NAME: {{ .Values.database.name | quote }}
+
+  # --------------------------------------------------------
+  # Runtime Paths (must match volumeMounts)
+  # --------------------------------------------------------
+  PLATFORM_CODE_ROOT: {{ .Values.paths.codeRoot | quote }}
+  PLATFORM_RUNTIME_ROOT: {{ .Values.paths.runtimeRoot | quote }}
+  QTS_DATA_DIR: {{ .Values.paths.dataDir | quote }}
+  QTS_LOG_DIR: {{ .Values.paths.logDir | quote }}
+  QTS_CONFIG_DIR: {{ .Values.paths.configDir | quote }}
+  OBSERVER_DATA_SOURCE_DIR: {{ .Values.paths.observerDataDir | quote }}
+
+  # --------------------------------------------------------
+  # QTS Runtime Settings
+  # --------------------------------------------------------
+  BROKER_TYPE: {{ .Values.qts.brokerType | quote }}
+  TRADING_MODE: {{ .Values.qts.tradingMode | quote }}
+  ENABLE_REAL_ORDER: {{ .Values.qts.enableRealOrder | quote }}
+
+  # Pipeline
+  PIPELINE_INTERVAL_MS: {{ .Values.qts.pipelineIntervalMs | quote }}
+  PIPELINE_ERROR_BACKOFF_MS: {{ .Values.qts.pipelineErrorBackoffMs | quote }}
+
+  # Safety Layer
+  PIPELINE_PAUSED: {{ .Values.qts.pipelinePaused | quote }}
+  KILL_SWITCH_ENABLED: {{ .Values.qts.killSwitchEnabled | quote }}
+  FAILSAFE_ENABLED: {{ .Values.qts.failsafeEnabled | quote }}
+
+  # Observer Integration
+  OBSERVER_TYPE: {{ .Values.qts.observerType | quote }}
+  OBSERVER_DATA_READ_ONLY: {{ .Values.qts.observerDataReadOnly | quote }}

@@ -1,0 +1,38 @@
+# templates/pvc.yaml
+# ============================================================
+# QTS Persistent Volume Claims
+# ============================================================
+
+# QTS Data PVC
+{{- if .Values.persistence.data.enabled }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ .Values.persistence.data.claimName }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "qts.labels" . | nindent 4 }}
+spec:
+  accessModes:
+    - {{ .Values.persistence.data.accessMode }}
+  resources:
+    requests:
+      storage: {{ .Values.persistence.data.size }}
+{{- end }}
+---
+# QTS Logs PVC
+{{- if .Values.persistence.logs.enabled }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ .Values.persistence.logs.claimName }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "qts.labels" . | nindent 4 }}
+spec:
+  accessModes:
+    - {{ .Values.persistence.logs.accessMode }}
+  resources:
+    requests:
+      storage: {{ .Values.persistence.logs.size }}
+{{- end }}

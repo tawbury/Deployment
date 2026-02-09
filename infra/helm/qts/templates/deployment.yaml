@@ -1,0 +1,220 @@
+# templates/deployment.yaml
+# ============================================================
+# QTS Deployment
+# ============================================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "qts.fullname" . }}
+  labels:
+    {{- include "qts.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "qts.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "qts.selectorLabels" . | nindent 8 }}
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+
+      securityContext:
+        fsGroup: {{ .Values.securityContext.pod.fsGroup }}
+
+      # --------------------------------------------------------
+      # Init Container: PVC 디렉토리 사전 생성
+      # --------------------------------------------------------
+      initContainers:
+        - name: init-dirs
+          image: busybox:1.37
+          command: ['sh', '-c']
+          args:
+            - |
+              echo "=== Creating QTS directory structure ==="
+              # data PVC (mounted at {{ .Values.paths.dataDir }})
+              mkdir -p {{ .Values.paths.dataDir }}/cache
+              mkdir -p {{ .Values.paths.dataDir }}/state
+              mkdir -p {{ .Values.paths.dataDir }}/history
+              mkdir -p {{ .Values.paths.dataDir }}/backup
+              # logs PVC (mounted at {{ .Values.paths.logDir }})
+              mkdir -p {{ .Values.paths.logDir }}/pipeline
+              mkdir -p {{ .Values.paths.logDir }}/execution
+              mkdir -p {{ .Values.paths.logDir }}/system
+
+              echo "=== Verifying Observer data source ==="
+              if [ -d "{{ .Values.paths.observerDataDir }}" ]; then
+                echo "Observer data directory accessible: {{ .Values.paths.observerDataDir }}"
+                ls -la {{ .Values.paths.observerDataDir }}/ | head -5
+              else
+                echo "WARNING: Observer data directory not found (will be created by hostPath)"
+              fi
+
+              echo "=== Init complete ==="
+          securityContext:
+            runAsUser: {{ .Values.securityContext.container.runAsUser }}
+            runAsGroup: {{ .Values.securityContext.container.runAsGroup }}
+          volumeMounts:
+            - name: qts-data
+              mountPath: {{ .Values.paths.dataDir }}
+            - name: qts-logs
+              mountPath: {{ .Values.paths.logDir }}
+            - name: observer-data-ro
+              mountPath: {{ .Values.paths.observerDataDir }}
+              readOnly: true
+            - name: tmp
+              mountPath: /tmp
+
+      # --------------------------------------------------------
+      # Main Container
+      # --------------------------------------------------------
+      containers:
+        - name: qts
+          image: {{ include "qts.image" . }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+
+          securityContext:
+            runAsUser: {{ .Values.securityContext.container.runAsUser }}
+            runAsGroup: {{ .Values.securityContext.container.runAsGroup }}
+            runAsNonRoot: {{ .Values.securityContext.container.runAsNonRoot }}
+            readOnlyRootFilesystem: {{ .Values.securityContext.container.readOnlyRootFilesystem }}
+            allowPrivilegeEscalation: {{ .Values.securityContext.container.allowPrivilegeEscalation }}
+            capabilities:
+              drop:
+                - ALL
+
+          ports:
+            - name: http
+              containerPort: {{ .Values.app.servicePort }}
+              protocol: TCP
+
+          # --------------------------------------------------------
+          # Environment: ConfigMap + Secrets
+          # --------------------------------------------------------
+          envFrom:
+            - configMapRef:
+                name: {{ include "qts.configMapName" . }}
+            - secretRef:
+                name: {{ .Values.secrets.main.name }}
+                optional: {{ .Values.secrets.main.optional }}
+
+          env:
+            # Deployment mode
+            - name: QTS_DEPLOYMENT_MODE
+              value: "kubernetes"
+            # Paths
+            - name: QTS_DATA_DIR
+              value: {{ .Values.paths.dataDir }}
+            - name: QTS_LOG_DIR
+              value: {{ .Values.paths.logDir }}
+            - name: QTS_CONFIG_DIR
+              value: {{ .Values.paths.configDir }}
+            # Observer data source
+            - name: OBSERVER_DATA_SOURCE_DIR
+              value: {{ .Values.paths.observerDataDir }}
+            # Pod info
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+
+          # --------------------------------------------------------
+          # Probes
+          # --------------------------------------------------------
+          {{- if .Values.probes.startup.enabled }}
+          startupProbe:
+            httpGet:
+              path: {{ .Values.probes.startup.path }}
+              port: http
+            initialDelaySeconds: {{ .Values.probes.startup.initialDelaySeconds }}
+            periodSeconds: {{ .Values.probes.startup.periodSeconds }}
+            timeoutSeconds: {{ .Values.probes.startup.timeoutSeconds }}
+            failureThreshold: {{ .Values.probes.startup.failureThreshold }}
+          {{- end }}
+
+          {{- if .Values.probes.liveness.enabled }}
+          livenessProbe:
+            httpGet:
+              path: {{ .Values.probes.liveness.path }}
+              port: http
+            initialDelaySeconds: {{ .Values.probes.liveness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.probes.liveness.periodSeconds }}
+            timeoutSeconds: {{ .Values.probes.liveness.timeoutSeconds }}
+            failureThreshold: {{ .Values.probes.liveness.failureThreshold }}
+          {{- end }}
+
+          {{- if .Values.probes.readiness.enabled }}
+          readinessProbe:
+            httpGet:
+              path: {{ .Values.probes.readiness.path }}
+              port: http
+            initialDelaySeconds: {{ .Values.probes.readiness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.probes.readiness.periodSeconds }}
+            timeoutSeconds: {{ .Values.probes.readiness.timeoutSeconds }}
+            failureThreshold: {{ .Values.probes.readiness.failureThreshold }}
+          {{- end }}
+
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+
+          # --------------------------------------------------------
+          # Volume Mounts
+          # --------------------------------------------------------
+          volumeMounts:
+            # QTS volumes
+            - name: qts-data
+              mountPath: {{ .Values.paths.dataDir }}
+            - name: qts-logs
+              mountPath: {{ .Values.paths.logDir }}
+            # Observer data (read-only)
+            {{- if .Values.persistence.observerData.enabled }}
+            - name: observer-data-ro
+              mountPath: {{ .Values.paths.observerDataDir }}
+              readOnly: true
+            {{- end }}
+            # tmp for readOnlyRootFilesystem
+            - name: tmp
+              mountPath: /tmp
+
+      terminationGracePeriodSeconds: 30
+
+      # --------------------------------------------------------
+      # Volumes
+      # --------------------------------------------------------
+      volumes:
+        # QTS data PVC
+        - name: qts-data
+          {{- if .Values.persistence.data.enabled }}
+          persistentVolumeClaim:
+            claimName: {{ .Values.persistence.data.claimName }}
+          {{- else }}
+          emptyDir: {}
+          {{- end }}
+        # QTS logs PVC
+        - name: qts-logs
+          {{- if .Values.persistence.logs.enabled }}
+          persistentVolumeClaim:
+            claimName: {{ .Values.persistence.logs.claimName }}
+          {{- else }}
+          emptyDir: {}
+          {{- end }}
+        # Observer data (hostPath - shared from Observer PVC)
+        {{- if .Values.persistence.observerData.enabled }}
+        - name: observer-data-ro
+          hostPath:
+            path: {{ .Values.persistence.observerData.hostPath }}
+            type: DirectoryOrCreate
+        {{- end }}
+        # tmp volume for readOnlyRootFilesystem
+        - name: tmp
+          emptyDir: {}

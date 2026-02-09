@@ -105,7 +105,12 @@ app/observer/config/universe/*.json
 app/observer/*.tar
 app/observer/*.tar.gz
 app/observer/*.tar.bak
+
+# QTS 디렉토리 일반 무시 (앱 소스 등)
+# 단, Helm 차트는 예외로 허용
 **/qts/
+!infra/helm/qts/
+!infra/helm/qts/**
 
 # -----------------------------------------------------------------------------
 # Project: infra & ops
