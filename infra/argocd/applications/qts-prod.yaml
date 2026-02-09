@@ -1,0 +1,53 @@
+# QTS Production ArgoCD Application
+# ============================================================
+# Deploys QTS (Quant Trading System) to observer-prod namespace
+# alongside Observer for shared PostgreSQL and data access
+# ============================================================
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: qts-prod
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+  labels:
+    app.kubernetes.io/name: qts
+    app.kubernetes.io/instance: qts-prod
+    app.kubernetes.io/part-of: tawbury-platform
+spec:
+  project: default
+
+  source:
+    repoURL: https://github.com/tawbury/Deployment
+    targetRevision: HEAD
+    path: infra/helm/qts
+    helm:
+      valueFiles:
+        - values.yaml
+        - values-prod.yaml
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: observer-prod
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=false
+      - PrunePropagationPolicy=foreground
+      - PruneLast=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m
+
+  # Health check customization
+  ignoreDifferences:
+    - group: apps
+      kind: Deployment
+      jsonPointers:
+        - /spec/replicas

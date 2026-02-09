@@ -88,15 +88,27 @@ paths:
   observerDataDir: /opt/platform/runtime/observer/data
 
 # ------------------------------------------------------------
-# 6. Secrets Reference
+# 6. Secrets Reference (Individual SealedSecrets)
 # ------------------------------------------------------------
+# SealedSecrets 기반 GitOps 표준 구성
+# 각 Secret은 bitnami/sealed-secrets로 암호화되어 Git에 저장
 secrets:
-  # 통합 secret (DB + Broker 자격증명)
-  main:
-    name: qts-secrets
+  # DB 자격증명 (PostgreSQL 인증) - Observer와 같은 PostgreSQL 사용
+  db:
+    enabled: true
+    name: obs-db-secret    # Observer DB secret 재사용
     optional: false
-  # 외부 Secret 사용 여부 (true = 클러스터에서 수동 생성)
-  useExternalSecret: true
+  # KIS API 자격증명 (미사용 - QTS는 Kiwoom 사용)
+  kis:
+    enabled: false
+    name: qts-kis-secret
+    optional: true
+  # Kiwoom API 자격증명 (키움증권)
+  # NOTE: SealedSecret 재생성 필요 (namespace: qts → observer-prod)
+  kiwoom:
+    enabled: true
+    name: qts-kiwoom-secret
+    optional: true    # true: Secret 없어도 Pod 시작 가능 (기능 제한)
 
 # ------------------------------------------------------------
 # 7. Probes Configuration

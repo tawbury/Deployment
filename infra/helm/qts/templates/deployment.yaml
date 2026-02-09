@@ -95,14 +95,26 @@ spec:
               protocol: TCP
 
           # --------------------------------------------------------
-          # Environment: ConfigMap + Secrets
+          # Environment: ConfigMap + Secrets (Individual SealedSecrets)
           # --------------------------------------------------------
           envFrom:
             - configMapRef:
                 name: {{ include "qts.configMapName" . }}
+            {{- if .Values.secrets.db.enabled }}
             - secretRef:
-                name: {{ .Values.secrets.main.name }}
-                optional: {{ .Values.secrets.main.optional }}
+                name: {{ .Values.secrets.db.name }}
+                optional: {{ .Values.secrets.db.optional | default false }}
+            {{- end }}
+            {{- if .Values.secrets.kis.enabled }}
+            - secretRef:
+                name: {{ .Values.secrets.kis.name }}
+                optional: {{ .Values.secrets.kis.optional | default true }}
+            {{- end }}
+            {{- if .Values.secrets.kiwoom.enabled }}
+            - secretRef:
+                name: {{ .Values.secrets.kiwoom.name }}
+                optional: {{ .Values.secrets.kiwoom.optional | default false }}
+            {{- end }}
 
           env:
             # Deployment mode
