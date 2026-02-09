@@ -78,7 +78,8 @@ postgres:
     pullPolicy: IfNotPresent
 
   # Secret containing POSTGRES_USER and POSTGRES_PASSWORD
-  secretName: observer-secrets
+  # Uses obs-db-secret from SealedSecrets (keys: DB_USER, DB_PASSWORD)
+  secretName: obs-db-secret
 
   resources:
     requests:
@@ -122,25 +123,26 @@ paths:
   appRoot: /app
 
 # ------------------------------------------------------------
-# 6. Secrets Reference
+# 6. Secrets Reference (Individual SealedSecrets)
 # ------------------------------------------------------------
-# 현재 클러스터에서 수동 생성된 observer-secrets 사용
-# 향후 SealedSecrets로 마이그레이션 예정
+# SealedSecrets 기반 GitOps 표준 구성
+# 각 Secret은 bitnami/sealed-secrets로 암호화되어 Git에 저장
 secrets:
-  # 통합 secret (DB + KIS 자격증명)
-  main:
-    name: observer-secrets
+  # DB 자격증명 (PostgreSQL 초기화 + Observer 앱)
+  db:
+    enabled: true
+    name: obs-db-secret
     optional: false
-  # 개별 SealedSecrets (향후 사용)
-  # db:
-  #   name: obs-db-sealed-secret
-  #   optional: false
-  # kis:
-  #   name: obs-kis-sealed-secret
-  #   optional: false
-  # kiwoom:
-  #   name: obs-kiwoom-sealed-secret
-  #   optional: true
+  # KIS API 자격증명 (한국투자증권)
+  kis:
+    enabled: true
+    name: obs-kis-secret
+    optional: false
+  # Kiwoom API 자격증명 (선택적)
+  kiwoom:
+    enabled: false
+    name: obs-kiwoom-secret
+    optional: true
 
 # ------------------------------------------------------------
 # 7. Probes Configuration
