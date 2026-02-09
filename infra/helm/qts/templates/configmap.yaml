@@ -57,6 +57,11 @@ data:
   # Pipeline
   PIPELINE_INTERVAL_MS: {{ .Values.qts.pipelineIntervalMs | quote }}
   PIPELINE_ERROR_BACKOFF_MS: {{ .Values.qts.pipelineErrorBackoffMs | quote }}
+  ERROR_BACKOFF_MAX_RETRIES: {{ .Values.qts.pipelineErrorBackoffMaxRetries | quote }}
+
+  # Trading
+  TRADING_ENABLED: {{ .Values.qts.tradingEnabled | quote }}
+  BASE_EQUITY: {{ .Values.qts.baseEquity | quote }}
 
   # Safety Layer
   PIPELINE_PAUSED: {{ .Values.qts.pipelinePaused | quote }}

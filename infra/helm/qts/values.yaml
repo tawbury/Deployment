@@ -45,6 +45,11 @@ qts:
   # Pipeline 설정
   pipelineIntervalMs: 1000
   pipelineErrorBackoffMs: 5000
+  pipelineErrorBackoffMaxRetries: 5
+
+  # Trading 설정
+  tradingEnabled: "true"      # 매매 활성화 여부
+  baseEquity: 10000000        # 기준 자산 (KRW)
 
   # Safety Layer
   pipelinePaused: "false"
