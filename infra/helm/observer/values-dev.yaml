@@ -10,6 +10,9 @@ app:
   env: development
   logLevel: DEBUG
   logFormat: text       # 개발 시 가독성 위해 text 포맷
+  # Config Loader - 개발 K8s 환경도 container/kubernetes 유지
+  runMode: container
+  deploymentMode: kubernetes
 
 observer:
   # 개발 환경에서는 빠른 피드백을 위해 짧은 간격

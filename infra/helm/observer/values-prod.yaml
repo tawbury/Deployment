@@ -10,6 +10,9 @@ app:
   env: production
   logLevel: INFO
   logFormat: json
+  # Config Loader - 운영 K8s 환경 설정 (명시적 선언)
+  runMode: container
+  deploymentMode: kubernetes
 
 observer:
   swingIntervalMinutes: 5

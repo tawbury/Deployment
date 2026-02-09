@@ -31,6 +31,10 @@ data:
   OBSERVER_STANDALONE: {{ if .Values.app.standalone }}"1"{{ else }}"0"{{ end }}
   PYTHONUNBUFFERED: "1"
 
+  # Config Loader Settings (shared/config.py)
+  RUN_MODE: {{ .Values.app.runMode | quote }}
+  OBSERVER_DEPLOYMENT_MODE: {{ .Values.app.deploymentMode | quote }}
+
   # --------------------------------------------------------
   # Database (non-secret values only)
   # --------------------------------------------------------

@@ -26,12 +26,16 @@ app:
   logLevel: INFO            # DEBUG | INFO | WARNING | ERROR
   logFormat: json           # json | text
   timezone: Asia/Seoul
-  
+
   # 서비스 포트
   servicePort: 8000
-  
+
   # 운영 모드
   standalone: true          # OBSERVER_STANDALONE=1
+
+  # Config Loader 설정 (shared/config.py 연동)
+  runMode: container        # local | container - config loader가 사용
+  deploymentMode: kubernetes  # docker | kubernetes | dev - 배포 모드 감지
 
 # ------------------------------------------------------------
 # 3. Observer Runtime Settings (→ ConfigMap)
