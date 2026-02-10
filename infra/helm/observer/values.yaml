@@ -215,7 +215,7 @@ persistence:
     size: 20Gi
     static:
       enabled: true
-      path: /home/ubuntu/data/observer/data
+      path: /opt/platform/runtime/observer/data
       nodeName: obs-prod-arm
   logs:
     enabled: true
@@ -225,7 +225,7 @@ persistence:
     size: 5Gi
     static:
       enabled: true
-      path: /home/ubuntu/data/observer/logs
+      path: /opt/platform/runtime/observer/logs
       nodeName: obs-prod-arm
   # config는 hostPath 사용 (symbols 파일 영속성)
   config:
