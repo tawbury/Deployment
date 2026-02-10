@@ -33,7 +33,18 @@ spec:
       securityContext:
         fsGroup: {{ .Values.securityContext.pod.fsGroup }}
 
-
+      # --------------------------------------------------------
+      # Init Containers
+      # --------------------------------------------------------
+      initContainers:
+        - name: init-directories
+          image: busybox:latest
+          command: ["sh", "-c", "mkdir -p {{ .Values.paths.snapshotDir }} && chown -R {{ .Values.securityContext.container.runAsUser }}:{{ .Values.securityContext.container.runAsGroup }} {{ .Values.paths.dataDir }}"]
+          securityContext:
+            runAsUser: 0
+          volumeMounts:
+            - name: observer-data
+              mountPath: {{ .Values.paths.dataDir }}
 
       # --------------------------------------------------------
       # Main Container
