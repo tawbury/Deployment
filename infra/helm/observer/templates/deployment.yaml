@@ -211,7 +211,11 @@ spec:
           emptyDir: {}
           {{- end }}
         - name: observer-logs
-          {{- if .Values.persistence.logs.enabled }}
+          {{- if eq .Values.persistence.logs.type "hostPath" }}
+          hostPath:
+            path: {{ .Values.persistence.logs.hostPath }}
+            type: DirectoryOrCreate
+          {{- else if .Values.persistence.logs.enabled }}
           persistentVolumeClaim:
             claimName: {{ .Values.persistence.logs.claimName }}
           {{- else }}

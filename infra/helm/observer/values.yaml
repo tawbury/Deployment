@@ -211,6 +211,8 @@ persistence:
     size: 1Gi
   logs:
     enabled: true
+    type: hostPath
+    hostPath: /var/lib/observer/logs
     claimName: observer-logs-pvc
     size: 1Gi    # 기존 PVC 크기 유지 (리사이즈 불가)
   # config는 hostPath 사용 (symbols 파일 영속성)
