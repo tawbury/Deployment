@@ -33,55 +33,7 @@ spec:
       securityContext:
         fsGroup: {{ .Values.securityContext.pod.fsGroup }}
 
-      # --------------------------------------------------------
-      # Init Container: PVC 디렉토리 사전 생성 + 심볼릭 링크
-      # --------------------------------------------------------
-      initContainers:
-        - name: init-dirs
-          image: busybox:1.37
-          command: ['sh', '-c']
-          args:
-            - |
-              echo "=== Phase 1: Creating directory structure ==="
-              # data PVC (mounted at {{ .Values.paths.dataDir }})
-              mkdir -p {{ .Values.paths.dataDir }}/assets/scalp
-              mkdir -p {{ .Values.paths.dataDir }}/assets/swing
-              mkdir -p {{ .Values.paths.dataDir }}/assets/system
-              mkdir -p {{ .Values.paths.dataDir }}/symbols
-              mkdir -p {{ .Values.paths.dataDir }}/cache
-              mkdir -p {{ .Values.paths.dataDir }}/backup
-              mkdir -p {{ .Values.paths.dataDir }}/universe
-              mkdir -p {{ .Values.paths.dataDir }}/backups/archives
-              mkdir -p {{ .Values.paths.dataDir }}/backups/manifests
-              # logs PVC (mounted at {{ .Values.paths.logDir }})
-              mkdir -p {{ .Values.paths.logDir }}/system
-              mkdir -p {{ .Values.paths.logDir }}/maintenance
-              mkdir -p {{ .Values.paths.logDir }}/scalp
-              mkdir -p {{ .Values.paths.logDir }}/swing
-              mkdir -p {{ .Values.paths.logDir }}/universe
 
-              echo "=== Phase 2: Creating app-compat symlinks ==="
-              # Create symlinks at /app for application compatibility
-              ln -sf {{ .Values.paths.dataDir }} {{ .Values.paths.appRoot }}/data
-              ln -sf {{ .Values.paths.logDir }} {{ .Values.paths.appRoot }}/logs
-              ln -sf {{ .Values.paths.configDir }} {{ .Values.paths.appRoot }}/config
-
-              echo "Symlinks created:"
-              ls -la {{ .Values.paths.appRoot }}/
-
-              echo "=== Init complete ==="
-          securityContext:
-            runAsUser: {{ .Values.securityContext.container.runAsUser }}
-            runAsGroup: {{ .Values.securityContext.container.runAsGroup }}
-          volumeMounts:
-            - name: observer-data
-              mountPath: {{ .Values.paths.dataDir }}
-            - name: observer-logs
-              mountPath: {{ .Values.paths.logDir }}
-            - name: app-compat
-              mountPath: {{ .Values.paths.appRoot }}
-            - name: tmp
-              mountPath: /tmp
 
       # --------------------------------------------------------
       # Main Container

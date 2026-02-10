@@ -204,16 +204,16 @@ securityContext:
 # ------------------------------------------------------------
 persistence:
   data:
-    enabled: true
+    enabled: false
     type: hostPath
     hostPath: /var/lib/observer
-    claimName: observer-data-pvc
+    claimName: observer-data-pvc-new
     size: 1Gi
   logs:
-    enabled: true
+    enabled: false
     type: hostPath
     hostPath: /var/lib/observer/logs
-    claimName: observer-logs-pvc
+    claimName: observer-logs-pvc-new
     size: 1Gi    # 기존 PVC 크기 유지 (리사이즈 불가)
   # config는 hostPath 사용 (symbols 파일 영속성)
   config:

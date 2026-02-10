@@ -28,48 +28,7 @@ spec:
       securityContext:
         fsGroup: {{ .Values.securityContext.pod.fsGroup }}
 
-      # --------------------------------------------------------
-      # Init Container: PVC 디렉토리 사전 생성
-      # --------------------------------------------------------
-      initContainers:
-        - name: init-dirs
-          image: busybox:1.37
-          command: ['sh', '-c']
-          args:
-            - |
-              echo "=== Creating QTS directory structure ==="
-              # data PVC (mounted at {{ .Values.paths.dataDir }})
-              mkdir -p {{ .Values.paths.dataDir }}/cache
-              mkdir -p {{ .Values.paths.dataDir }}/state
-              mkdir -p {{ .Values.paths.dataDir }}/history
-              mkdir -p {{ .Values.paths.dataDir }}/backup
-              # logs PVC (mounted at {{ .Values.paths.logDir }})
-              mkdir -p {{ .Values.paths.logDir }}/pipeline
-              mkdir -p {{ .Values.paths.logDir }}/execution
-              mkdir -p {{ .Values.paths.logDir }}/system
 
-              echo "=== Verifying Observer data source ==="
-              if [ -d "{{ .Values.paths.observerDataDir }}" ]; then
-                echo "Observer data directory accessible: {{ .Values.paths.observerDataDir }}"
-                ls -la {{ .Values.paths.observerDataDir }}/ | head -5
-              else
-                echo "WARNING: Observer data directory not found (will be created by hostPath)"
-              fi
-
-              echo "=== Init complete ==="
-          securityContext:
-            runAsUser: {{ .Values.securityContext.container.runAsUser }}
-            runAsGroup: {{ .Values.securityContext.container.runAsGroup }}
-          volumeMounts:
-            - name: qts-data
-              mountPath: {{ .Values.paths.dataDir }}
-            - name: qts-logs
-              mountPath: {{ .Values.paths.logDir }}
-            - name: observer-data-ro
-              mountPath: {{ .Values.paths.observerDataDir }}
-              readOnly: true
-            - name: tmp
-              mountPath: /tmp
 
       # --------------------------------------------------------
       # Main Container
