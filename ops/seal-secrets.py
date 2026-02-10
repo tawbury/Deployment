@@ -52,11 +52,6 @@ SECRET_MAPPINGS = {
         "source_dirs": [PRJ_QTS_BASE / "config"],
         "secret_name": "qts-kis-secret",
         "key_map": {
-            # QTS KIS key mapping logic - Prioritize VTS or REAL based on mode?
-            # For now, we will map BOTH VTS and REAL keys to specific output keys if needed, 
-            # OR just dump them as is. 
-            # Looking at standard QTS env, it separates VTS/REAL. 
-            # Let's include everything relevant.
             "KIS_VTS_APP_KEY": "KIS_VTS_APP_KEY",
             "KIS_VTS_APP_SECRET": "KIS_VTS_APP_SECRET",
             "KIS_VTS_ACCOUNT_NO": "KIS_VTS_ACCOUNT_NO",
@@ -74,6 +69,13 @@ SECRET_MAPPINGS = {
             "KIWOOM_REAL_APP_KEY": "KIWOOM_REAL_APP_KEY",
             "KIWOOM_REAL_APP_SECRET": "KIWOOM_REAL_APP_SECRET"
          }
+    },
+    "qts-credentials-sealed-secret.yaml": {
+        "source_dirs": [PRJ_QTS_BASE / "config"],
+        "secret_name": "qts-credentials",
+        "file_map": {
+            "credentials.json": "credentials.json"
+        }
     }
 }
 
@@ -129,40 +131,51 @@ def get_merged_env_vars(source_dirs: List[Path]) -> Dict[str, str]:
     return merged_env
 
 def create_sealed_secret(filename, config, dry_run=False):
-    """Generates a SealedSecret from env vars with mapping."""
+    """Generates a SealedSecret from env vars or files with mapping."""
     print(f"\nProcessing {filename}...")
     
     source_dirs = config["source_dirs"]
-    key_map = config["key_map"]
+    key_map = config.get("key_map", {})
+    file_map = config.get("file_map", {})
     secret_name = config["secret_name"]
     
     env_vars = get_merged_env_vars(source_dirs)
     
-    # Collect secret data
-    secret_literals = []
-    missing_keys = []
-    
-    for target_key, source_key in key_map.items():
-        if source_key in env_vars:
-            secret_literals.append(f"{target_key}={env_vars[source_key]}")
-        else:
-            missing_keys.append(f"{target_key}(from {source_key})")
-            
-    if missing_keys:
-        print(f"  [Error] Missing environment variables for {filename}: {', '.join(missing_keys)}")
-        # Don't return, try to generate what we have? Or fail? 
-        # Better to fail/skip to avoid breaking existing secrets with partial updates
-        return
-
     # 1. Create temporary dry-run Secret
     cmd_create = [
         "kubectl", "create", "secret", "generic", secret_name,
         "--dry-run=client", "-o", "json"
     ]
     
-    for literal in secret_literals:
-        cmd_create.extend(["--from-literal", literal])
-        
+    # Handle literals (key_map)
+    missing_literals = []
+    for target_key, source_key in key_map.items():
+        if source_key in env_vars:
+            cmd_create.extend(["--from-literal", f"{target_key}={env_vars[source_key]}"])
+        else:
+            missing_literals.append(f"{target_key}(from {source_key})")
+            
+    if missing_literals:
+        print(f"  [Error] Missing environment variables for {filename}: {', '.join(missing_literals)}")
+        return
+
+    # Handle files (file_map)
+    missing_files = []
+    for target_key, source_filename in file_map.items():
+        found = False
+        for config_dir in source_dirs:
+            file_path = config_dir / source_filename
+            if file_path.exists():
+                cmd_create.extend(["--from-file", f"{target_key}={file_path}"])
+                found = True
+                break
+        if not found:
+            missing_files.append(source_filename)
+            
+    if missing_files:
+        print(f"  [Error] Missing files for {filename}: {', '.join(missing_files)}")
+        return
+
     try:
         # Generate the secret JSON
         result = subprocess.run(cmd_create, capture_output=True, text=True, check=True)
@@ -232,7 +245,7 @@ def main():
 
     targets = []
     if args.target == "all":
-        targets = SECRET_MAPPINGS.keys()
+        targets = list(SECRET_MAPPINGS.keys())
     elif args.target == "observer":
         targets = [k for k, v in SECRET_MAPPINGS.items() if "obs" in k]
     elif args.target == "qts":
