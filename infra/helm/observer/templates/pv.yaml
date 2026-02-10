@@ -29,3 +29,65 @@ spec:
           values:
           - {{ .Values.postgres.persistence.static.nodeName }}
 {{- end }}
+---
+# ============================================================
+# Observer Data Static Persistent Volume
+# ============================================================
+{{- if and .Values.persistence.data.enabled .Values.persistence.data.static.enabled }}
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: {{ .Values.persistence.data.claimName }}-pv
+  labels:
+    {{- include "observer.labels" . | nindent 4 }}
+    type: local
+spec:
+  storageClassName: manual
+  capacity:
+    storage: {{ .Values.persistence.data.size }}
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  volumeMode: Filesystem
+  local:
+    path: {{ .Values.persistence.data.static.path }}
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+      - matchExpressions:
+        - key: kubernetes.io/hostname
+          operator: In
+          values:
+          - {{ .Values.persistence.data.static.nodeName }}
+{{- end }}
+---
+# ============================================================
+# Observer Logs Static Persistent Volume
+# ============================================================
+{{- if and .Values.persistence.logs.enabled .Values.persistence.logs.static.enabled }}
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: {{ .Values.persistence.logs.claimName }}-pv
+  labels:
+    {{- include "observer.labels" . | nindent 4 }}
+    type: local
+spec:
+  storageClassName: manual
+  capacity:
+    storage: {{ .Values.persistence.logs.size }}
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  volumeMode: Filesystem
+  local:
+    path: {{ .Values.persistence.logs.static.path }}
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+      - matchExpressions:
+        - key: kubernetes.io/hostname
+          operator: In
+          values:
+          - {{ .Values.persistence.logs.static.nodeName }}
+{{- end }}

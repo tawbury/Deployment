@@ -208,17 +208,25 @@ securityContext:
 # ------------------------------------------------------------
 persistence:
   data:
-    enabled: false
-    type: hostPath
-    hostPath: /var/lib/observer
-    claimName: observer-data-pvc-new
-    size: 1Gi
+    enabled: true
+    # type: hostPath (사용 안함 - Static PV로 대체)
+    # hostPath: /var/lib/observer
+    claimName: observer-data-pvc
+    size: 20Gi
+    static:
+      enabled: true
+      path: /home/ubuntu/data/observer/data
+      nodeName: obs-prod-arm
   logs:
-    enabled: false
-    type: hostPath
-    hostPath: /var/lib/observer/logs
-    claimName: observer-logs-pvc-new
-    size: 1Gi    # 기존 PVC 크기 유지 (리사이즈 불가)
+    enabled: true
+    # type: hostPath (사용 안함 - Static PV로 대체)
+    # hostPath: /var/lib/observer/logs
+    claimName: observer-logs-pvc
+    size: 5Gi
+    static:
+      enabled: true
+      path: /home/ubuntu/data/observer/logs
+      nodeName: obs-prod-arm
   # config는 hostPath 사용 (symbols 파일 영속성)
   config:
     hostPath: /opt/platform/runtime/observer/config
