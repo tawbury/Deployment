@@ -195,7 +195,11 @@ spec:
       # --------------------------------------------------------
       volumes:
         - name: observer-data
-          {{- if .Values.persistence.data.enabled }}
+          {{- if eq .Values.persistence.data.type "hostPath" }}
+          hostPath:
+            path: {{ .Values.persistence.data.hostPath }}
+            type: DirectoryOrCreate
+          {{- else if .Values.persistence.data.enabled }}
           persistentVolumeClaim:
             claimName: {{ .Values.persistence.data.claimName }}
           {{- else }}
