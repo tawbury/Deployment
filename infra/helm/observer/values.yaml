@@ -95,7 +95,7 @@ postgres:
     size: 10Gi
     static:
       enabled: true
-      path: /home/ubuntu/data/db
+      path: /opt/platform/runtime/observer/DB
       nodeName: obs-prod-arm
 
   probes:
