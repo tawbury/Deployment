@@ -93,6 +93,10 @@ postgres:
     enabled: true
     claimName: observer-db-pvc
     size: 10Gi
+    static:
+      enabled: true
+      path: /home/ubuntu/data/db
+      nodeName: obs-prod-arm
 
   probes:
     liveness:

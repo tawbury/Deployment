@@ -1,0 +1,31 @@
+# templates/pv.yaml
+# ============================================================
+# PostgreSQL Static Persistent Volume
+# ============================================================
+{{- if and .Values.postgres.enabled .Values.postgres.persistence.enabled .Values.postgres.persistence.static.enabled }}
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: {{ .Values.postgres.persistence.claimName }}-pv
+  labels:
+    {{- include "observer.labels" . | nindent 4 }}
+    type: local
+spec:
+  storageClassName: manual
+  capacity:
+    storage: {{ .Values.postgres.persistence.size }}
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  volumeMode: Filesystem
+  local:
+    path: {{ .Values.postgres.persistence.static.path }}
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+      - matchExpressions:
+        - key: kubernetes.io/hostname
+          operator: In
+          values:
+          - {{ .Values.postgres.persistence.static.nodeName }}
+{{- end }}

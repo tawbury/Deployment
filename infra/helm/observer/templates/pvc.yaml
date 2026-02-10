@@ -50,6 +50,10 @@ metadata:
 spec:
   accessModes:
     - ReadWriteOnce
+{{- if .Values.postgres.persistence.static.enabled }}
+  storageClassName: manual
+  volumeName: {{ .Values.postgres.persistence.claimName }}-pv
+{{- end }}
   resources:
     requests:
       storage: {{ .Values.postgres.persistence.size }}
