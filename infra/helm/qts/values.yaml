@@ -182,11 +182,19 @@ persistence:
     claimName: qts-data-pvc
     size: 5Gi
     accessMode: ReadWriteOnce
+    static:
+      enabled: true
+      path: /opt/platform/runtime/qts/data
+      nodeName: obs-prod-arm
   logs:
     enabled: true
     claimName: qts-logs-pvc
     size: 2Gi
     accessMode: ReadWriteOnce
+    static:
+      enabled: true
+      path: /opt/platform/runtime/qts/logs
+      nodeName: obs-prod-arm
   # Observer 데이터 공유 (hostPath - 읽기 전용)
   observerData:
     enabled: true

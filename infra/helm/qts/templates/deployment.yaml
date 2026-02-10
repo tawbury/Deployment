@@ -28,7 +28,26 @@ spec:
       securityContext:
         fsGroup: {{ .Values.securityContext.pod.fsGroup }}
 
-
+      # --------------------------------------------------------
+      # Init Containers
+      # --------------------------------------------------------
+      initContainers:
+        - name: init-directories
+          image: busybox:latest
+          command:
+            - /bin/sh
+            - -c
+            - |
+              # Ensure directories exist and permissions are correct
+              mkdir -p {{ .Values.paths.dataDir }} {{ .Values.paths.logDir }}
+              chown -R {{ .Values.securityContext.container.runAsUser }}:{{ .Values.securityContext.container.runAsGroup }} {{ .Values.paths.dataDir }} {{ .Values.paths.logDir }}
+          securityContext:
+            runAsUser: 0
+          volumeMounts:
+            - name: qts-data
+              mountPath: {{ .Values.paths.dataDir }}
+            - name: qts-logs
+              mountPath: {{ .Values.paths.logDir }}
 
       # --------------------------------------------------------
       # Main Container
