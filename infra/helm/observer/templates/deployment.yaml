@@ -39,12 +39,19 @@ spec:
       initContainers:
         - name: init-directories
           image: busybox:latest
-          command: ["sh", "-c", "mkdir -p {{ .Values.paths.snapshotDir }} && chown -R {{ .Values.securityContext.container.runAsUser }}:{{ .Values.securityContext.container.runAsGroup }} {{ .Values.paths.dataDir }}"]
+          command:
+            - /bin/sh
+            - -c
+            - |
+              mkdir -p {{ .Values.paths.snapshotDir }} {{ .Values.paths.tokenCacheDir }} {{ .Values.paths.dataDir }}/symbols {{ .Values.paths.systemLogDir }} {{ .Values.paths.maintenanceLogDir }}
+              chown -R {{ .Values.securityContext.container.runAsUser }}:{{ .Values.securityContext.container.runAsGroup }} {{ .Values.paths.dataDir }} {{ .Values.paths.logDir }}
           securityContext:
             runAsUser: 0
           volumeMounts:
             - name: observer-data
               mountPath: {{ .Values.paths.dataDir }}
+            - name: observer-logs
+              mountPath: {{ .Values.paths.logDir }}
 
       # --------------------------------------------------------
       # Main Container
