@@ -135,7 +135,7 @@ secrets:
   # DB 자격증명 (PostgreSQL 초기화 + Observer 앱)
   db:
     enabled: true
-    name: obs-db-sealed-secret
+    name: obs-db-secret
     optional: false
   # KIS API 자격증명 (한국투자증권)
   kis:

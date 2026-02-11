@@ -71,3 +71,7 @@ data:
   # Observer Integration
   OBSERVER_TYPE: {{ .Values.qts.observerType | quote }}
   OBSERVER_DATA_READ_ONLY: {{ .Values.qts.observerDataReadOnly | quote }}
+
+  # Google Sheets
+  GOOGLE_SHEET_KEY: {{ .Values.qts.googleSheetKey | quote }}
+  GOOGLE_CREDENTIALS_FILE: {{ .Values.secrets.credentials.mountPath | quote }}

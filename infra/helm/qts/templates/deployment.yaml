@@ -175,6 +175,13 @@ spec:
             # tmp for readOnlyRootFilesystem
             - name: tmp
               mountPath: /tmp
+            # Google Credentials
+            {{- if .Values.secrets.credentials.enabled }}
+            - name: google-credentials
+              mountPath: {{ .Values.secrets.credentials.mountPath }}
+              subPath: {{ .Values.secrets.credentials.secretKey }}
+              readOnly: true
+            {{- end }}
 
       terminationGracePeriodSeconds: 30
 
@@ -208,3 +215,12 @@ spec:
         # tmp volume for readOnlyRootFilesystem
         - name: tmp
           emptyDir: {}
+        # Google Credentials
+        {{- if .Values.secrets.credentials.enabled }}
+        - name: google-credentials
+          secret:
+            secretName: {{ .Values.secrets.credentials.name }}
+            items:
+              - key: {{ .Values.secrets.credentials.secretKey }}
+                path: {{ .Values.secrets.credentials.secretKey }}
+        {{- end }}

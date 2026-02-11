@@ -60,6 +60,9 @@ qts:
   observerType: file         # stub | file | uds
   observerDataReadOnly: "true"
 
+  # Google Sheets 설정
+  googleSheetKey: "1IpNGxrBm6MhwrfhcteDuL36lLUIg_eP6fmf05Y98_c4"
+
 # ------------------------------------------------------------
 # 4. Database Configuration (→ ConfigMap, non-secret only)
 # ------------------------------------------------------------
@@ -114,6 +117,12 @@ secrets:
     enabled: true
     name: qts-kiwoom-secret
     optional: true    # true: Secret 없어도 Pod 시작 가능 (기능 제한)
+  # Google 서비스 계정 (Google Sheets API 인증)
+  credentials:
+    enabled: true
+    name: qts-credentials
+    secretKey: credentials.json
+    mountPath: /opt/platform/runtime/qts/config/credentials.json
 
 # ------------------------------------------------------------
 # 7. Probes Configuration

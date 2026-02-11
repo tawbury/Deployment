@@ -10,8 +10,8 @@ from typing import Dict, List, Optional
 # Configuration
 PROJECT_ROOT = Path(__file__).resolve().parent.parent  # d:\development\deployment
 REPO_ROOT = PROJECT_ROOT.parent # d:\development
-PRJ_OBS_BASE = REPO_ROOT / "prj_obs"
-PRJ_QTS_BASE = REPO_ROOT / "prj_qts"
+PRJ_OBS_BASE = REPO_ROOT / "observer"
+PRJ_QTS_BASE = REPO_ROOT / "QTS"
 SEALED_SECRETS_DIR = PROJECT_ROOT / "infra" / "k8s" / "base" / "sealed-secrets"
 PUB_CERT_PATH = PROJECT_ROOT / "pub-cert.pem"
 
