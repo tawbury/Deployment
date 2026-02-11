@@ -84,6 +84,11 @@ tmpclaude-*
 docs/
 !docs/observer/
 !docs/qts/
+.bkit-*
+bkit-*
+.pdca-*
+pdca-*
+CLAUDE.md
 
 # -----------------------------------------------------------------------------
 # Project: app/observer
