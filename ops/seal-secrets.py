@@ -66,8 +66,13 @@ SECRET_MAPPINGS = {
          "key_map": {
             "KIWOOM_VTS_APP_KEY": "KIWOOM_VTS_APP_KEY",
             "KIWOOM_VTS_APP_SECRET": "KIWOOM_VTS_APP_SECRET",
+            "KIWOOM_VTS_ACCOUNT_NO": "KIWOOM_VTS_ACCOUNT_NO",
+            "KIWOOM_VTS_BASE_URL": "KIWOOM_VTS_BASE_URL",
             "KIWOOM_REAL_APP_KEY": "KIWOOM_REAL_APP_KEY",
-            "KIWOOM_REAL_APP_SECRET": "KIWOOM_REAL_APP_SECRET"
+            "KIWOOM_REAL_APP_SECRET": "KIWOOM_REAL_APP_SECRET",
+            "KIWOOM_REAL_ACCOUNT_NO": "KIWOOM_REAL_ACCOUNT_NO",
+            "KIWOOM_REAL_BASE_URL": "KIWOOM_REAL_BASE_URL",
+            "KIS_HTS_ID": "KIS_HTS_ID"
          }
     },
     "qts-credentials-sealed-secret.yaml": {
