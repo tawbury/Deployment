@@ -9,16 +9,19 @@ on:
     branches:
       - master
     paths:
-      - 'infra/helm/observer/values.yaml'
+      - 'infra/helm/observer/**'
+      - 'infra/helm/qts/**'
   workflow_dispatch:
     inputs:
       app_name:
-        description: "ArgoCD app name to sync"
+        description: "ArgoCD app to sync (all, observer-prod, qts-prod)"
         required: false
-        default: "observer-prod"
-
-env:
-  ARGOCD_APP: observer-prod
+        default: "all"
+        type: choice
+        options:
+          - all
+          - observer-prod
+          - qts-prod
 
 jobs:
   sync:
@@ -29,8 +32,36 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Detect changed apps
+        id: detect
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "apps=${{ github.event.inputs.app_name }}" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          APPS=""
+          CHANGED=$(git diff --name-only HEAD~1 HEAD)
+          echo "Changed files:"
+          echo "$CHANGED"
+
+          echo "$CHANGED" | grep -q "infra/helm/observer/" && APPS="$APPS observer-prod"
+          echo "$CHANGED" | grep -q "infra/helm/qts/" && APPS="$APPS qts-prod"
+
+          APPS=$(echo "$APPS" | xargs)
+          echo "Detected apps: ${APPS:-none}"
+          echo "apps=${APPS:-}" >> "$GITHUB_OUTPUT"
+
+      - name: Skip if no apps detected
+        if: steps.detect.outputs.apps == ''
+        run: |
+          echo "No relevant app changes detected. Skipping sync."
 
       - name: Setup SSH
+        if: steps.detect.outputs.apps != ''
         run: |
           mkdir -p ~/.ssh
           echo "${{ secrets.SSH_KEY }}" > ~/.ssh/id_rsa
@@ -38,25 +69,25 @@ jobs:
           ssh-keyscan -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
 
       - name: Trigger ArgoCD Sync via SSH
+        if: steps.detect.outputs.apps != ''
         env:
-          TARGET_APP: ${{ github.event.inputs.app_name || env.ARGOCD_APP }}
+          TARGET_APPS: ${{ steps.detect.outputs.apps }}
         run: |
-          ssh -i ~/.ssh/id_rsa ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} bash -s "$TARGET_APP" << 'REMOTE_SCRIPT'
-            APP_NAME="$1"
-            echo "Syncing ArgoCD app: $APP_NAME"
+          ssh -i ~/.ssh/id_rsa ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} bash -s "$TARGET_APPS" << 'REMOTE_SCRIPT'
+            TARGET_APPS="$1"
+            SYNC_FAILED=0
 
             # Ensure ArgoCD CLI is available
             if ! command -v argocd &> /dev/null; then
                 echo "argocd command not found. Installing locally..."
                 mkdir -p ~/bin
 
-                # 아키텍처 감지 (ARM64 클러스터 대응)
                 ARCH=$(uname -m)
                 case $ARCH in
                     x86_64)  ARGOCD_ARCH="amd64" ;;
                     aarch64) ARGOCD_ARCH="arm64" ;;
                     arm64)   ARGOCD_ARCH="arm64" ;;
-                    *)       echo "Unsupported architecture: $ARCH"; exit 1 ;;
+                    *)       echo "::error::Unsupported architecture: $ARCH"; exit 1 ;;
                 esac
 
                 echo "Detected architecture: $ARCH -> downloading argocd-linux-$ARGOCD_ARCH"
@@ -65,17 +96,48 @@ jobs:
             fi
             export PATH=$HOME/bin:$PATH
 
-            # ArgoCD sync
-            argocd app sync "$APP_NAME" --prune || true
+            # Verify ArgoCD CLI auth
+            if ! argocd app list --output name &> /dev/null; then
+                echo "::error::ArgoCD CLI authentication failed. Check server config."
+                exit 1
+            fi
+            echo "ArgoCD CLI authenticated successfully."
 
-            # Wait for sync to complete (max 5 minutes)
-            argocd app wait "$APP_NAME" --timeout 300 || true
+            # Resolve app list
+            if [ "$TARGET_APPS" = "all" ]; then
+                TARGET_APPS="observer-prod qts-prod"
+            fi
 
-            # Get final status
-            argocd app get "$APP_NAME"
+            for APP_NAME in $TARGET_APPS; do
+                echo ""
+                echo "=========================================="
+                echo "Syncing ArgoCD app: $APP_NAME"
+                echo "=========================================="
+
+                # Sync
+                if ! argocd app sync "$APP_NAME" --prune; then
+                    echo "::error::ArgoCD sync FAILED for $APP_NAME"
+                    SYNC_FAILED=1
+                    continue
+                fi
+
+                # Wait for sync to complete (max 5 minutes)
+                if ! argocd app wait "$APP_NAME" --timeout 300; then
+                    echo "::warning::ArgoCD wait TIMED OUT for $APP_NAME (sync may still be in progress)"
+                    SYNC_FAILED=1
+                fi
+
+                # Get final status
+                argocd app get "$APP_NAME"
+            done
+
+            exit $SYNC_FAILED
           REMOTE_SCRIPT
 
       - name: Summary
+        if: always() && steps.detect.outputs.apps != ''
         run: |
-          echo "✅ ArgoCD sync triggered for ${{ env.ARGOCD_APP }}"
-          echo "Check ArgoCD dashboard for deployment status."
+          echo "### ArgoCD Sync Summary" >> "$GITHUB_STEP_SUMMARY"
+          echo "- **Apps**: ${{ steps.detect.outputs.apps }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- **Trigger**: ${{ github.event_name }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Check ArgoCD dashboard for deployment status." >> "$GITHUB_STEP_SUMMARY"

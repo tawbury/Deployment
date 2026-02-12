@@ -154,6 +154,9 @@ infra/k8s/**/kustomize-build.yaml
 # 배포 이력만 Git에 남길 경우 아래 주석 해제
 # .github/last_deployed_tag
 
+# kubeseal binary archive
+kubeseal.tar.gz
+
 # Phase 0: 평문 Secret / kubeconfig (Git 추적 해제 대상)
 infra/k8s/base/secrets/observer-prod-plain.yaml
 infra/k8s/base/secrets/obs-prod.yaml

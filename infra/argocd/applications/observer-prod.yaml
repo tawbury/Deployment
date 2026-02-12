@@ -1,0 +1,52 @@
+# Observer Production ArgoCD Application
+# ============================================================
+# Deploys Observer (market observation engine) to observer-prod namespace
+# ============================================================
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: observer-prod
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+  labels:
+    app.kubernetes.io/name: observer
+    app.kubernetes.io/instance: observer-prod
+    app.kubernetes.io/part-of: tawbury-platform
+spec:
+  project: default
+
+  source:
+    repoURL: https://github.com/tawbury/Deployment
+    targetRevision: HEAD
+    path: infra/helm/observer
+    helm:
+      valueFiles:
+        - values.yaml
+        - values-prod.yaml
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: observer-prod
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=false
+      - PrunePropagationPolicy=foreground
+      - PruneLast=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m
+
+  # Health check customization
+  ignoreDifferences:
+    - group: apps
+      kind: Deployment
+      jsonPointers:
+        - /spec/replicas
