@@ -57,6 +57,8 @@ data:
   # --------------------------------------------------------
   # Observer Runtime Settings
   # --------------------------------------------------------
+  TRACK_A_ENABLED: {{ if .Values.observer.trackAEnabled }}"true"{{ else }}"false"{{ end }}
+  TRACK_B_ENABLED: {{ if .Values.observer.trackBEnabled }}"true"{{ else }}"false"{{ end }}
   OBSERVER_SWING_INTERVAL_MINUTES: {{ .Values.observer.swingIntervalMinutes | quote }}
   OBSERVER_SCALP_MAX_SLOTS: {{ .Values.observer.scalpMaxSlots | quote }}
   OBSERVER_TRADING_START_TIME: {{ .Values.observer.tradingStartTime | quote }}

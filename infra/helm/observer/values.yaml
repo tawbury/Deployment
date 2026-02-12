@@ -41,6 +41,10 @@ app:
 # 3. Observer Runtime Settings (→ ConfigMap)
 # ------------------------------------------------------------
 observer:
+  # Collector 활성화
+  trackAEnabled: true
+  trackBEnabled: true     # Scalp Collector (Track B) - WebSocket real-time
+
   # Collector 설정
   swingIntervalMinutes: 5
   scalpMaxSlots: 41
