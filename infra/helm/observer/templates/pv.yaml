@@ -91,3 +91,65 @@ spec:
           values:
           - {{ .Values.persistence.logs.static.nodeName }}
 {{- end }}
+---
+# ============================================================
+# Observer Backup Archives Static PV
+# ============================================================
+{{- if .Values.persistence.backups.archives.enabled }}
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: {{ .Values.persistence.backups.archives.claimName }}-pv
+  labels:
+    {{- include "observer.labels" . | nindent 4 }}
+    type: local
+spec:
+  storageClassName: manual
+  capacity:
+    storage: {{ .Values.persistence.backups.archives.size }}
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  volumeMode: Filesystem
+  local:
+    path: {{ .Values.persistence.backups.archives.static.path }}
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+      - matchExpressions:
+        - key: kubernetes.io/hostname
+          operator: In
+          values:
+          - {{ .Values.persistence.backups.archives.static.nodeName }}
+{{- end }}
+---
+# ============================================================
+# Observer Backup Manifests Static PV
+# ============================================================
+{{- if .Values.persistence.backups.manifests.enabled }}
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: {{ .Values.persistence.backups.manifests.claimName }}-pv
+  labels:
+    {{- include "observer.labels" . | nindent 4 }}
+    type: local
+spec:
+  storageClassName: manual
+  capacity:
+    storage: {{ .Values.persistence.backups.manifests.size }}
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  volumeMode: Filesystem
+  local:
+    path: {{ .Values.persistence.backups.manifests.static.path }}
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+      - matchExpressions:
+        - key: kubernetes.io/hostname
+          operator: In
+          values:
+          - {{ .Values.persistence.backups.manifests.static.nodeName }}
+{{- end }}

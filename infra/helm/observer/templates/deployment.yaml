@@ -162,6 +162,15 @@ spec:
               mountPath: /tmp
             - name: app-compat
               mountPath: {{ .Values.paths.appRoot }}
+            # Backup Archives & Manifests
+            {{- if .Values.persistence.backups.archives.enabled }}
+            - name: observer-backup-archives
+              mountPath: {{ .Values.persistence.backups.archives.static.path }}
+            {{- end }}
+            {{- if .Values.persistence.backups.manifests.enabled }}
+            - name: observer-backup-manifests
+              mountPath: {{ .Values.persistence.backups.manifests.static.path }}
+            {{- end }}
 
       terminationGracePeriodSeconds: 30
 
@@ -201,3 +210,15 @@ spec:
         # emptyDir for app symlinks at /app
         - name: app-compat
           emptyDir: {}
+        # Backup Archives Volume
+        {{- if .Values.persistence.backups.archives.enabled }}
+        - name: observer-backup-archives
+          persistentVolumeClaim:
+            claimName: {{ .Values.persistence.backups.archives.claimName }}
+        {{- end }}
+        # Backup Manifests Volume
+        {{- if .Values.persistence.backups.manifests.enabled }}
+        - name: observer-backup-manifests
+          persistentVolumeClaim:
+            claimName: {{ .Values.persistence.backups.manifests.claimName }}
+        {{- end }}

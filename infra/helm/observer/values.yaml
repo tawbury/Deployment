@@ -235,6 +235,25 @@ persistence:
   config:
     hostPath: /opt/platform/runtime/observer/config
 
+  # Backups (Archives & Manifests) - Explicit Persistence
+  backups:
+    archives:
+      enabled: true
+      claimName: observer-backup-archives-pvc
+      size: 10Gi
+      static:
+        enabled: true
+        path: /opt/platform/runtime/observer/data/backups/archives
+        nodeName: obs-prod-arm
+    manifests:
+      enabled: true
+      claimName: observer-backup-manifests-pvc
+      size: 1Gi
+      static:
+        enabled: true
+        path: /opt/platform/runtime/observer/data/backups/manifests
+        nodeName: obs-prod-arm
+
 # ------------------------------------------------------------
 # 11. Service
 # ------------------------------------------------------------

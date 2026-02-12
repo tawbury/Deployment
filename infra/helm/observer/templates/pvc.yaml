@@ -66,3 +66,41 @@ spec:
     requests:
       storage: {{ .Values.postgres.persistence.size }}
 {{- end }}
+---
+# Observer Backup Archives PVC
+{{- if .Values.persistence.backups.archives.enabled }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ .Values.persistence.backups.archives.claimName }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "observer.labels" . | nindent 4 }}
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: manual
+  volumeName: {{ .Values.persistence.backups.archives.claimName }}-pv
+  resources:
+    requests:
+      storage: {{ .Values.persistence.backups.archives.size }}
+{{- end }}
+---
+# Observer Backup Manifests PVC
+{{- if .Values.persistence.backups.manifests.enabled }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ .Values.persistence.backups.manifests.claimName }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "observer.labels" . | nindent 4 }}
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: manual
+  volumeName: {{ .Values.persistence.backups.manifests.claimName }}-pv
+  resources:
+    requests:
+      storage: {{ .Values.persistence.backups.manifests.size }}
+{{- end }}
