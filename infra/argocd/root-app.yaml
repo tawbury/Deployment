@@ -1,0 +1,37 @@
+# ArgoCD Root Application (App of Apps)
+# ============================================================
+# infra/argocd/applications/ 디렉토리의 Application 리소스를 관리
+# ArgoCD UI에서 설정을 변경해도 selfHeal이 레포 상태로 복원
+# ============================================================
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: root-app
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: root-app
+    app.kubernetes.io/part-of: tawbury-platform
+spec:
+  project: default
+
+  source:
+    repoURL: https://github.com/tawbury/Deployment
+    targetRevision: HEAD
+    path: infra/argocd/applications
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=false
+    retry:
+      limit: 3
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 1m
