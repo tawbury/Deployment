@@ -11,7 +11,7 @@
 # ------------------------------------------------------------
 image:
   repository: ghcr.io/tawbury/qts
-  tag: build-20260213-123246
+  tag: build-20260213-131646
   pullPolicy: Always
 
 imagePullSecrets:
