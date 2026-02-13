@@ -45,6 +45,12 @@ spec:
             - |
               mkdir -p {{ .Values.paths.snapshotDir }} {{ .Values.paths.tokenCacheDir }} {{ .Values.paths.dataDir }}/symbols {{ .Values.paths.dataDir }}/backups {{ .Values.paths.systemLogDir }} {{ .Values.paths.maintenanceLogDir }}
               chown -R {{ .Values.securityContext.container.runAsUser }}:{{ .Values.securityContext.container.runAsGroup }} {{ .Values.paths.dataDir }} {{ .Values.paths.logDir }}
+              {{- if .Values.persistence.backups.archives.enabled }}
+              chown -R {{ .Values.securityContext.container.runAsUser }}:{{ .Values.securityContext.container.runAsGroup }} {{ .Values.persistence.backups.archives.static.path }}
+              {{- end }}
+              {{- if .Values.persistence.backups.manifests.enabled }}
+              chown -R {{ .Values.securityContext.container.runAsUser }}:{{ .Values.securityContext.container.runAsGroup }} {{ .Values.persistence.backups.manifests.static.path }}
+              {{- end }}
           securityContext:
             runAsUser: 0
           volumeMounts:
@@ -52,6 +58,14 @@ spec:
               mountPath: {{ .Values.paths.dataDir }}
             - name: observer-logs
               mountPath: {{ .Values.paths.logDir }}
+            {{- if .Values.persistence.backups.archives.enabled }}
+            - name: observer-backup-archives
+              mountPath: {{ .Values.persistence.backups.archives.static.path }}
+            {{- end }}
+            {{- if .Values.persistence.backups.manifests.enabled }}
+            - name: observer-backup-manifests
+              mountPath: {{ .Values.persistence.backups.manifests.static.path }}
+            {{- end }}
 
       # --------------------------------------------------------
       # Main Container

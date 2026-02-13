@@ -54,6 +54,11 @@ data:
   OBSERVER_SNAPSHOT_DIR: {{ .Values.paths.snapshotDir | quote }}
   KIS_TOKEN_CACHE_DIR: {{ .Values.paths.tokenCacheDir | quote }}
 
+  # Backup Paths
+  OBSERVER_BACKUP_DIR: {{ .Values.paths.backupDir | quote }}
+  OBSERVER_ARCHIVE_DIR: {{ .Values.paths.archiveDir | quote }}
+  OBSERVER_MANIFEST_DIR: {{ .Values.paths.manifestDir | quote }}
+
   # --------------------------------------------------------
   # Observer Runtime Settings
   # --------------------------------------------------------

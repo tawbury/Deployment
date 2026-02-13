@@ -127,6 +127,10 @@ paths:
   maintenanceLogDir: /opt/platform/runtime/observer/logs/maintenance
   snapshotDir: /opt/platform/runtime/observer/data/universe
   tokenCacheDir: /opt/platform/runtime/observer/data/cache
+  # 백업 경로
+  backupDir: /opt/platform/runtime/observer/data/backups
+  archiveDir: /opt/platform/runtime/observer/data/backups/archives
+  manifestDir: /opt/platform/runtime/observer/data/backups/manifests
   # 앱 호환성 symlink (/app/* → /opt/platform/runtime/observer/*)
   appRoot: /app
 
