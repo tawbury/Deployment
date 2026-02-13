@@ -1,0 +1,144 @@
+# ArgoCD 컴포넌트별 리소스 제한 패치
+# apply-patches.sh 스크립트로 일괄 적용
+# 서버 현재 설정과 동일 (2026-02-13 기준)
+#
+# 컴포넌트          | Memory | CPU
+# ─────────────────+────────+──────
+# application-ctrl  | 512Mi  | 500m
+# repo-server       | 256Mi  | 500m
+# server            | 256Mi  | 500m
+# dex-server        | 256Mi  | 250m
+# applicationset    | 256Mi  | 250m
+# notifications     | 128Mi  | 100m
+# redis             | 128Mi  | 100m
+
+apiVersion: v1
+kind: List
+items:
+  # StatefulSet
+  - apiVersion: apps/v1
+    kind: StatefulSet
+    metadata:
+      name: argocd-application-controller
+      namespace: argocd
+    spec:
+      template:
+        spec:
+          containers:
+            - name: argocd-application-controller
+              resources:
+                limits:
+                  memory: "512Mi"
+                  cpu: "500m"
+                requests:
+                  memory: "256Mi"
+                  cpu: "100m"
+
+  # Deployments
+  - apiVersion: apps/v1
+    kind: Deployment
+    metadata:
+      name: argocd-repo-server
+      namespace: argocd
+    spec:
+      template:
+        spec:
+          containers:
+            - name: argocd-repo-server
+              resources:
+                limits:
+                  memory: "256Mi"
+                  cpu: "500m"
+                requests:
+                  memory: "128Mi"
+                  cpu: "100m"
+
+  - apiVersion: apps/v1
+    kind: Deployment
+    metadata:
+      name: argocd-server
+      namespace: argocd
+    spec:
+      template:
+        spec:
+          containers:
+            - name: argocd-server
+              resources:
+                limits:
+                  memory: "256Mi"
+                  cpu: "500m"
+                requests:
+                  memory: "128Mi"
+                  cpu: "100m"
+
+  - apiVersion: apps/v1
+    kind: Deployment
+    metadata:
+      name: argocd-dex-server
+      namespace: argocd
+    spec:
+      template:
+        spec:
+          containers:
+            - name: dex
+              resources:
+                limits:
+                  memory: "256Mi"
+                  cpu: "250m"
+                requests:
+                  memory: "64Mi"
+                  cpu: "50m"
+
+  - apiVersion: apps/v1
+    kind: Deployment
+    metadata:
+      name: argocd-applicationset-controller
+      namespace: argocd
+    spec:
+      template:
+        spec:
+          containers:
+            - name: argocd-applicationset-controller
+              resources:
+                limits:
+                  memory: "256Mi"
+                  cpu: "250m"
+                requests:
+                  memory: "64Mi"
+                  cpu: "50m"
+
+  - apiVersion: apps/v1
+    kind: Deployment
+    metadata:
+      name: argocd-notifications-controller
+      namespace: argocd
+    spec:
+      template:
+        spec:
+          containers:
+            - name: argocd-notifications-controller
+              resources:
+                limits:
+                  memory: "128Mi"
+                  cpu: "100m"
+                requests:
+                  memory: "64Mi"
+                  cpu: "50m"
+
+  - apiVersion: apps/v1
+    kind: Deployment
+    metadata:
+      name: argocd-redis
+      namespace: argocd
+    spec:
+      template:
+        spec:
+          containers:
+            - name: redis
+              resources:
+                limits:
+                  memory: "128Mi"
+                  cpu: "100m"
+                requests:
+                  memory: "64Mi"
+                  cpu: "50m"

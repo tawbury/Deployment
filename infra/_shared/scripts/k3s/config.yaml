@@ -1,0 +1,8 @@
+# K3s 서버 설정 (/etc/rancher/k3s/config.yaml)
+# node-bootstrap.sh가 이 파일을 /etc/rancher/k3s/config.yaml로 복사
+# 적용 후 K3s 재시작 필요: systemctl restart k3s
+
+# 이미지 GC: 디스크 70% 초과 시 50%까지 정리
+kubelet-arg:
+  - "image-gc-high-threshold=70"
+  - "image-gc-low-threshold=50"
