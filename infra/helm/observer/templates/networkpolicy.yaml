@@ -1,0 +1,54 @@
+# templates/networkpolicy.yaml
+# ============================================================
+# Observer NetworkPolicy
+# ============================================================
+{{- if .Values.networkPolicy.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "observer.fullname" . }}
+  labels:
+    {{- include "observer.labels" . | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "observer.selectorLabels" . | nindent 6 }}
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    # QTS에서 8000 포트 접근 허용
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: qts
+      ports:
+        - protocol: TCP
+          port: {{ .Values.app.servicePort }}
+  egress:
+    # PostgreSQL 5432 접근 허용
+    - to:
+        - podSelector:
+            matchLabels:
+              app: postgres
+      ports:
+        - protocol: TCP
+          port: {{ .Values.database.port }}
+    # DNS (kube-system) 허용
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+    # HTTPS 외부 API 허용 (KIS API 등)
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+      ports:
+        - protocol: TCP
+          port: 443
+{{- end }}

@@ -1,0 +1,58 @@
+# templates/networkpolicy.yaml
+# ============================================================
+# QTS NetworkPolicy
+# ============================================================
+# QTS는 외부 요청을 직접 받지 않으므로 Ingress 없음
+# Egress: PostgreSQL, Observer, DNS, HTTPS(외부 API) 허용
+# ============================================================
+{{- if .Values.networkPolicy.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "qts.fullname" . }}
+  labels:
+    {{- include "qts.labels" . | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "qts.selectorLabels" . | nindent 6 }}
+  policyTypes:
+    - Ingress
+    - Egress
+  # Ingress: 없음 (QTS는 외부 요청을 직접 받지 않음)
+  ingress: []
+  egress:
+    # PostgreSQL 접근 (5432)
+    - to:
+        - podSelector:
+            matchLabels:
+              app: postgres
+      ports:
+        - protocol: TCP
+          port: 5432
+    # Observer 접근 (8000)
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: observer
+      ports:
+        - protocol: TCP
+          port: 8000
+    # DNS (kube-system, 53)
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+    # HTTPS 외부 API (443)
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+      ports:
+        - protocol: TCP
+          port: 443
+{{- end }}

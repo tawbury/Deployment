@@ -9,12 +9,14 @@ metadata:
   namespace: argocd
   finalizers:
     - resources-finalizer.argocd.argoproj.io
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
   labels:
     app.kubernetes.io/name: observer
     app.kubernetes.io/instance: observer-prod
     app.kubernetes.io/part-of: tawbury-platform
 spec:
-  project: default
+  project: tawbury-platform
 
   source:
     repoURL: https://github.com/tawbury/Deployment

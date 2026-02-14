@@ -10,12 +10,14 @@ metadata:
   namespace: argocd
   finalizers:
     - resources-finalizer.argocd.argoproj.io
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
   labels:
     app.kubernetes.io/name: qts
     app.kubernetes.io/instance: qts-prod
     app.kubernetes.io/part-of: tawbury-platform
 spec:
-  project: default
+  project: tawbury-platform
 
   source:
     repoURL: https://github.com/tawbury/Deployment

@@ -1,0 +1,29 @@
+# ArgoCD AppProject - tawbury-platform
+# ============================================================
+# QTS Trading Platform 전용 프로젝트: Observer + QTS 앱 관리
+# root-app이 applications/ 디렉토리를 스캔하므로 여기에 배치
+# ============================================================
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: tawbury-platform
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  description: "QTS Trading Platform - Observer + QTS applications"
+  sourceRepos:
+    - "https://github.com/tawbury/Deployment"
+  destinations:
+    - namespace: observer-prod
+      server: https://kubernetes.default.svc
+    - namespace: argocd
+      server: https://kubernetes.default.svc
+  clusterResourceWhitelist:
+    - group: ""
+      kind: Namespace
+  namespaceResourceBlacklist:
+    - group: ""
+      kind: ResourceQuota
+    - group: ""
+      kind: LimitRange

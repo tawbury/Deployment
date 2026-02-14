@@ -10,6 +10,11 @@ metadata:
     {{- include "qts.labels" . | nindent 4 }}
 spec:
   replicas: {{ .Values.replicaCount }}
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 0
+      maxUnavailable: 1
   selector:
     matchLabels:
       {{- include "qts.selectorLabels" . | nindent 6 }}
@@ -33,7 +38,7 @@ spec:
       # --------------------------------------------------------
       initContainers:
         - name: init-directories
-          image: busybox:latest
+          image: "{{ .Values.initContainers.image }}:{{ .Values.initContainers.tag }}"
           command:
             - /bin/sh
             - -c
