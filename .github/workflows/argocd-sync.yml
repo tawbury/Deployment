@@ -1,6 +1,8 @@
 # ArgoCD Sync Workflow
 # Triggers ArgoCD sync via SSH to the K8s cluster
 # Called after image tag update in values.yaml
+# [Enhanced] Pre-validation + failure diagnosis
+# Phase 3 (deploy-autofix-toolkit)
 
 name: ArgoCD Sync
 
@@ -55,13 +57,93 @@ jobs:
           echo "Detected apps: ${APPS:-none}"
           echo "apps=${APPS:-}" >> "$GITHUB_OUTPUT"
 
+      # ============================================================
+      # [Phase 3] Helm Setup: pre-validate 스텝에서 필요
+      # ============================================================
+      - name: Setup Helm
+        if: steps.detect.outputs.apps != ''
+        uses: azure/setup-helm@v4
+        with:
+          version: 'v3.16.0'
+
+      # ============================================================
+      # [Phase 3] Pre-Validation: 싱크 전 사전 검증
+      # ============================================================
+      - name: Pre-validate (Helm Lint)
+        id: pre-lint
+        if: steps.detect.outputs.apps != ''
+        run: |
+          echo "=== Pre-Sync: Helm Lint ==="
+          chmod +x tests/k8s/lint/helm-lint.sh
+          if tests/k8s/lint/helm-lint.sh; then
+            echo "result=pass" >> "$GITHUB_OUTPUT"
+          else
+            echo "result=fail" >> "$GITHUB_OUTPUT"
+            echo "::error::Helm lint failed. Sync will be skipped."
+          fi
+
+      - name: Pre-validate (AppProject Permissions)
+        id: pre-project
+        if: steps.detect.outputs.apps != '' && steps.pre-lint.outputs.result == 'pass'
+        run: |
+          echo "=== Pre-Sync: AppProject Permission Check ==="
+          chmod +x tests/k8s/argocd/validate-project-permissions.sh
+          if tests/k8s/argocd/validate-project-permissions.sh; then
+            echo "result=pass" >> "$GITHUB_OUTPUT"
+          else
+            echo "result=fail" >> "$GITHUB_OUTPUT"
+            echo "::error::AppProject permission validation failed."
+          fi
+
+      - name: Pre-validate (Image Exists)
+        id: pre-image
+        if: steps.detect.outputs.apps != '' && steps.pre-lint.outputs.result == 'pass'
+        env:
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "=== Pre-Sync: Image Existence Check ==="
+          chmod +x tests/k8s/helm/validate-image-exists.sh
+          if tests/k8s/helm/validate-image-exists.sh; then
+            echo "result=pass" >> "$GITHUB_OUTPUT"
+          else
+            echo "result=fail" >> "$GITHUB_OUTPUT"
+            echo "::warning::Image check failed (non-blocking)."
+          fi
+
+      - name: Pre-validation gate
+        id: gate
+        if: steps.detect.outputs.apps != ''
+        run: |
+          LINT="${{ steps.pre-lint.outputs.result }}"
+          PROJECT="${{ steps.pre-project.outputs.result }}"
+          IMAGE="${{ steps.pre-image.outputs.result }}"
+
+          echo "Pre-validation results:"
+          echo "  Helm Lint:    ${LINT:-skipped}"
+          echo "  AppProject:   ${PROJECT:-skipped}"
+          echo "  Image Check:  ${IMAGE:-skipped}"
+
+          # Lint와 AppProject는 blocking (실패 시 싱크 차단)
+          # Image check는 non-blocking (경고만 출력)
+          if [[ "$LINT" == "fail" || "$PROJECT" == "fail" ]]; then
+            echo "::error::Pre-validation failed. Blocking sync."
+            echo "passed=false" >> "$GITHUB_OUTPUT"
+            exit 1
+          fi
+
+          if [[ "$IMAGE" == "fail" ]]; then
+            echo "::warning::Image check failed but proceeding."
+          fi
+
+          echo "passed=true" >> "$GITHUB_OUTPUT"
+
       - name: Skip if no apps detected
         if: steps.detect.outputs.apps == ''
         run: |
           echo "No relevant app changes detected. Skipping sync."
 
       - name: Setup SSH
-        if: steps.detect.outputs.apps != ''
+        if: steps.detect.outputs.apps != '' && steps.gate.outputs.passed == 'true'
         run: |
           mkdir -p ~/.ssh
           echo "${{ secrets.SSH_KEY }}" > ~/.ssh/id_rsa
@@ -69,7 +151,7 @@ jobs:
           ssh-keyscan -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
 
       - name: Trigger ArgoCD Sync via SSH
-        if: steps.detect.outputs.apps != ''
+        if: steps.detect.outputs.apps != '' && steps.gate.outputs.passed == 'true'
         env:
           TARGET_APPS: ${{ steps.detect.outputs.apps }}
         run: |
@@ -134,10 +216,106 @@ jobs:
             exit $SYNC_FAILED
           REMOTE_SCRIPT
 
+      # ============================================================
+      # [Phase 2-2] 싱크 실패 시 자동 진단
+      # ============================================================
+      - name: Diagnose sync failure
+        id: diagnose
+        if: >-
+          failure() &&
+          steps.detect.outputs.apps != '' &&
+          steps.gate.outputs.passed == 'true'
+        env:
+          TARGET_APPS: ${{ steps.detect.outputs.apps }}
+        run: |
+          DIAGNOSIS_OUTPUT=$(ssh -i ~/.ssh/id_rsa \
+            ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} \
+            bash -s "$TARGET_APPS" << 'DIAGNOSE_SCRIPT'
+            TARGET_APPS="$1"
+            SCRIPT_PATH="/opt/platform/scripts/deploy/diagnose-sync-failure.sh"
+
+            # 진단 스크립트 존재 확인
+            if [[ ! -f "$SCRIPT_PATH" ]]; then
+              echo '{"diagnosis":{"errors":[{"description":"diagnose-sync-failure.sh not installed","pattern_id":"SCRIPT_MISSING"}]}}'
+              exit 0
+            fi
+
+            # 앱별 진단 실행 (전체 또는 개별)
+            if [ "$TARGET_APPS" = "all" ]; then
+              sudo bash "$SCRIPT_PATH" --app all --json --suggest-fix
+            else
+              for APP in $TARGET_APPS; do
+                sudo bash "$SCRIPT_PATH" --app "$APP" --json --suggest-fix 2>/dev/null || echo '{}'
+              done | jq -s '.'
+            fi
+          DIAGNOSE_SCRIPT
+          ) || true  # 진단 실패가 워크플로우를 추가 블록하지 않도록
+
+          # GitHub Actions output에 진단 결과 저장
+          echo "diagnosis_json<<EOF" >> "$GITHUB_OUTPUT"
+          echo "$DIAGNOSIS_OUTPUT" >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
+
+      # ============================================================
+      # [Phase 3 + 2-2] 구조화된 Summary
+      # ============================================================
       - name: Summary
         if: always() && steps.detect.outputs.apps != ''
         run: |
           echo "### ArgoCD Sync Summary" >> "$GITHUB_STEP_SUMMARY"
-          echo "- **Apps**: ${{ steps.detect.outputs.apps }}" >> "$GITHUB_STEP_SUMMARY"
-          echo "- **Trigger**: ${{ github.event_name }}" >> "$GITHUB_STEP_SUMMARY"
-          echo "- Check ArgoCD dashboard for deployment status." >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Item | Status |" >> "$GITHUB_STEP_SUMMARY"
+          echo "|------|--------|" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Apps | ${{ steps.detect.outputs.apps }} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Trigger | ${{ github.event_name }} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Helm Lint | ${{ steps.pre-lint.outputs.result }} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| AppProject | ${{ steps.pre-project.outputs.result }} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Image Check | ${{ steps.pre-image.outputs.result }} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Gate | ${{ steps.gate.outputs.passed }} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+
+          # [Phase 2-2] 진단 결과 렌더링
+          DIAGNOSIS='${{ steps.diagnose.outputs.diagnosis_json }}'
+          if [ -n "$DIAGNOSIS" ] && [ "$DIAGNOSIS" != "null" ] && [ "$DIAGNOSIS" != "{}" ]; then
+            echo "" >> "$GITHUB_STEP_SUMMARY"
+            echo "### Sync Failure Diagnosis" >> "$GITHUB_STEP_SUMMARY"
+            echo "" >> "$GITHUB_STEP_SUMMARY"
+
+            # 에러 패턴 테이블
+            echo "| Severity | Category | Description | Auto-Fix |" >> "$GITHUB_STEP_SUMMARY"
+            echo "|----------|----------|-------------|----------|" >> "$GITHUB_STEP_SUMMARY"
+
+            echo "$DIAGNOSIS" | jq -r '
+              (if type == "array" then .[] else . end) |
+              .diagnosis.errors[]? // empty |
+              "| \(.severity) | \(.category) | \(.description) | \(
+                if .auto_fixable == true then "Yes"
+                elif .auto_fixable == "partial" then "Partial"
+                else "No" end) |"
+            ' >> "$GITHUB_STEP_SUMMARY" 2>/dev/null || true
+
+            # 수정 제안 섹션
+            FIX_SUGGESTIONS=$(echo "$DIAGNOSIS" | jq -r '
+              (if type == "array" then .[] else . end) |
+              .diagnosis.fix_suggestions[]? // empty |
+              "- \(.description)\n  ```\n  \(.auto_fix_command)\n  ```"
+            ' 2>/dev/null || echo "")
+
+            if [ -n "$FIX_SUGGESTIONS" ]; then
+              echo "" >> "$GITHUB_STEP_SUMMARY"
+              echo "### Suggested Fixes" >> "$GITHUB_STEP_SUMMARY"
+              echo "" >> "$GITHUB_STEP_SUMMARY"
+              echo "$FIX_SUGGESTIONS" >> "$GITHUB_STEP_SUMMARY"
+            fi
+          fi
+
+          # Pre-validation 실패 시 안내
+          if [[ "${{ steps.gate.outputs.passed }}" != "true" ]]; then
+            echo "" >> "$GITHUB_STEP_SUMMARY"
+            echo "### Pre-validation Failed" >> "$GITHUB_STEP_SUMMARY"
+            echo "Sync was **skipped**. Fix the issues and push again." >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "---" >> "$GITHUB_STEP_SUMMARY"
+          echo "*Check ArgoCD dashboard for deployment status.*" >> "$GITHUB_STEP_SUMMARY"

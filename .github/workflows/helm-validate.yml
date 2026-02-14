@@ -1,0 +1,257 @@
+# Helm Validate (PR Gate)
+# Validates Helm charts and ArgoCD config before merge
+# Phase 3 (deploy-autofix-toolkit)
+
+name: Helm Validate (PR)
+
+on:
+  pull_request:
+    paths:
+      - 'infra/helm/**'
+      - 'infra/argocd/**'
+    branches:
+      - master
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  # ============================================================
+  # Job 1: Helm Lint
+  # ============================================================
+  lint:
+    name: Helm Lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: 'v3.16.0'
+
+      - name: Run Helm Lint
+        id: lint
+        run: |
+          chmod +x tests/k8s/lint/helm-lint.sh
+          if tests/k8s/lint/helm-lint.sh 2>&1 | tee /tmp/lint-output.txt; then
+            echo "result=PASS" >> "$GITHUB_OUTPUT"
+          else
+            echo "result=FAIL" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Upload lint result
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lint-result
+          path: /tmp/lint-output.txt
+
+  # ============================================================
+  # Job 2: Manifest Validate (helm template + kubeconform)
+  # ============================================================
+  validate-manifests:
+    name: Validate Manifests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: 'v3.16.0'
+
+      - name: Install kubeconform
+        run: |
+          KUBECONFORM_VERSION="v0.6.7"
+          curl -sSL "https://github.com/yannh/kubeconform/releases/download/${KUBECONFORM_VERSION}/kubeconform-linux-amd64.tar.gz" \
+            | tar xz -C /usr/local/bin
+
+      - name: Run Manifest Validation
+        id: validate
+        run: |
+          chmod +x tests/k8s/manifests/validate.sh
+          if tests/k8s/manifests/validate.sh 2>&1 | tee /tmp/manifest-output.txt; then
+            echo "result=PASS" >> "$GITHUB_OUTPUT"
+          else
+            echo "result=FAIL" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Upload manifest result
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: manifest-result
+          path: /tmp/manifest-output.txt
+
+  # ============================================================
+  # Job 3: AppProject 정합성 검증
+  # ============================================================
+  validate-project:
+    name: Validate AppProject Permissions
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: 'v3.16.0'
+
+      - name: Run AppProject Permission Validation
+        id: project
+        run: |
+          chmod +x tests/k8s/argocd/validate-project-permissions.sh
+          if tests/k8s/argocd/validate-project-permissions.sh 2>&1 | tee /tmp/project-output.txt; then
+            echo "result=PASS" >> "$GITHUB_OUTPUT"
+          else
+            echo "result=FAIL" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Upload project result
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: project-result
+          path: /tmp/project-output.txt
+
+  # ============================================================
+  # Job 4: Values 오버라이드 검증
+  # ============================================================
+  validate-values:
+    name: Validate Values Override
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Run Values Override Validation
+        id: values
+        run: |
+          chmod +x tests/k8s/helm/validate-values-override.sh
+          if tests/k8s/helm/validate-values-override.sh 2>&1 | tee /tmp/values-output.txt; then
+            echo "result=PASS" >> "$GITHUB_OUTPUT"
+          else
+            echo "result=FAIL" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Upload values result
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: values-result
+          path: /tmp/values-output.txt
+
+  # ============================================================
+  # Job 5: 결과 통합 + PR 코멘트
+  # ============================================================
+  report:
+    name: Report Results
+    runs-on: ubuntu-latest
+    if: always()
+    needs: [lint, validate-manifests, validate-project, validate-values]
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: /tmp/results
+
+      - name: Generate PR Comment
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # 각 Job 결과 수집
+          LINT_STATUS="${{ needs.lint.result }}"
+          MANIFEST_STATUS="${{ needs.validate-manifests.result }}"
+          PROJECT_STATUS="${{ needs.validate-project.result }}"
+          VALUES_STATUS="${{ needs.validate-values.result }}"
+
+          # 상태 매핑
+          status_icon() {
+            case "$1" in
+              success) echo "PASS" ;;
+              failure) echo "FAIL" ;;
+              *)       echo "SKIP" ;;
+            esac
+          }
+
+          LINT_ICON=$(status_icon "$LINT_STATUS")
+          MANIFEST_ICON=$(status_icon "$MANIFEST_STATUS")
+          PROJECT_ICON=$(status_icon "$PROJECT_STATUS")
+          VALUES_ICON=$(status_icon "$VALUES_STATUS")
+
+          # 전체 결과 판정
+          if [[ "$LINT_STATUS" == "success" && "$MANIFEST_STATUS" == "success" \
+             && "$PROJECT_STATUS" == "success" && "$VALUES_STATUS" == "success" ]]; then
+            OVERALL="ALL CHECKS PASSED"
+          else
+            OVERALL="CHECKS FAILED"
+          fi
+
+          # 실패 상세 로그 수집
+          DETAILS=""
+          for name in lint-result manifest-result project-result values-result; do
+            file="/tmp/results/${name}/*.txt"
+            if ls $file 1>/dev/null 2>&1; then
+              content=$(cat $file | tail -30)
+              if [ -n "$content" ]; then
+                DETAILS="${DETAILS}
+          <details>
+          <summary>${name}</summary>
+
+          \`\`\`
+          ${content}
+          \`\`\`
+          </details>
+          "
+              fi
+            fi
+          done
+
+          # PR 코멘트 본문 생성
+          COMMENT_BODY="## Helm Validation Report
+
+          | Check | Result |
+          |-------|--------|
+          | Helm Lint | ${LINT_ICON} |
+          | Manifest Validate | ${MANIFEST_ICON} |
+          | AppProject Permissions | ${PROJECT_ICON} |
+          | Values Override | ${VALUES_ICON} |
+
+          **Overall: ${OVERALL}**
+
+          ${DETAILS}
+
+          ---
+          *Triggered by commit: \`${{ github.event.pull_request.head.sha }}\`*"
+
+          # 기존 봇 코멘트 삭제 후 새 코멘트 작성 (중복 방지)
+          PR_NUMBER="${{ github.event.pull_request.number }}"
+
+          EXISTING=$(gh api "repos/${{ github.repository }}/issues/${PR_NUMBER}/comments" \
+            --jq '.[] | select(.body | startswith("## Helm Validation Report")) | .id' \
+            2>/dev/null || true)
+
+          for cid in $EXISTING; do
+            gh api -X DELETE "repos/${{ github.repository }}/issues/comments/${cid}" \
+              2>/dev/null || true
+          done
+
+          # 새 코멘트 작성
+          gh pr comment "$PR_NUMBER" --body "$COMMENT_BODY"
+
+      - name: Set job summary
+        if: always()
+        run: |
+          echo "### Helm Validation Summary" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Check | Result |" >> "$GITHUB_STEP_SUMMARY"
+          echo "|-------|--------|" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Helm Lint | ${{ needs.lint.result }} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Manifest Validate | ${{ needs.validate-manifests.result }} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| AppProject Permissions | ${{ needs.validate-project.result }} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Values Override | ${{ needs.validate-values.result }} |" >> "$GITHUB_STEP_SUMMARY"
