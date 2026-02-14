@@ -22,6 +22,8 @@ spec:
   clusterResourceWhitelist:
     - group: ""
       kind: Namespace
+    - group: ""
+      kind: PersistentVolume
   namespaceResourceBlacklist:
     - group: ""
       kind: ResourceQuota
