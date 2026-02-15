@@ -21,7 +21,7 @@ spec:
   source:
     repoURL: https://github.com/tawbury/Deployment
     targetRevision: HEAD
-    path: infra/helm/observer
+    path: clusters/oci-1/observer
     helm:
       valueFiles:
         - values.yaml

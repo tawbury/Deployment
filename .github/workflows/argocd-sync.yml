@@ -11,8 +11,8 @@ on:
     branches:
       - master
     paths:
-      - 'infra/helm/observer/**'
-      - 'infra/helm/qts/**'
+      - 'clusters/oci-1/observer/**'
+      - 'clusters/oci-1/qts/**'
   workflow_dispatch:
     inputs:
       app_name:
@@ -50,8 +50,8 @@ jobs:
           echo "Changed files:"
           echo "$CHANGED"
 
-          echo "$CHANGED" | grep -q "infra/helm/observer/" && APPS="$APPS observer-prod"
-          echo "$CHANGED" | grep -q "infra/helm/qts/" && APPS="$APPS qts-prod"
+          echo "$CHANGED" | grep -q "clusters/oci-1/observer/" && APPS="$APPS observer-prod"
+          echo "$CHANGED" | grep -q "clusters/oci-1/qts/" && APPS="$APPS qts-prod"
 
           APPS=$(echo "$APPS" | xargs)
           echo "Detected apps: ${APPS:-none}"

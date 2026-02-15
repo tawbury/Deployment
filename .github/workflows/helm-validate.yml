@@ -7,7 +7,7 @@ name: Helm Validate (PR)
 on:
   pull_request:
     paths:
-      - 'infra/helm/**'
+      - 'clusters/**'
       - 'infra/argocd/**'
     branches:
       - master

@@ -81,9 +81,10 @@ mcp-cli/
 CLAUDE.md
 tmpclaude-*
 .agent/
-docs/
+docs/*
 !docs/observer/
 !docs/qts/
+!docs/multi-cluster-setup.md
 .bkit-*
 bkit-*
 .pdca-*
@@ -116,6 +117,8 @@ app/observer/*.tar.bak
 **/qts/
 !infra/helm/qts/
 !infra/helm/qts/**
+!clusters/oci-1/qts/
+!clusters/oci-1/qts/**
 
 # -----------------------------------------------------------------------------
 # Project: infra & ops

@@ -1,0 +1,45 @@
+# clusters/oci-2/n8n/helm-charts/values.oci.yaml
+# ============================================================
+# OCI #2 ARM 운영 환경 오버라이드
+# ============================================================
+# 환경 특성:
+#   - OCI Ampere A1 (ARM64, 최대 4코어 24GB)
+#   - 용도: n8n 운영 서버 (QTS 모니터링, 장애 알림, 자동 복구)
+#   - 감시자(n8n)와 감시 대상(QTS)은 반드시 별도 서버에 분리
+#   - Ingress를 통한 HTTPS 접근
+# ============================================================
+
+# 운영 환경 리소스
+resources:
+  requests:
+    cpu: 500m
+    memory: 512Mi
+  limits:
+    cpu: 2000m
+    memory: 2Gi
+
+# 운영 스토리지 (워크플로우 데이터 + 실행 이력)
+persistence:
+  size: 20Gi
+
+# Ingress 활성화 (HTTPS)
+ingress:
+  enabled: true
+  className: traefik
+  annotations:
+    # TODO: 필요한 Ingress 어노테이션 추가
+    # cert-manager.io/cluster-issuer: letsencrypt-prod
+  # TODO: <N8N_DOMAIN>을 실제 도메인으로 변경
+  host: "<N8N_DOMAIN>"
+  tls:
+    - secretName: n8n-tls
+      hosts:
+        - "<N8N_DOMAIN>"
+
+# ARM64 노드 선택
+nodeSelector:
+  kubernetes.io/arch: arm64
+
+# TODO: <N8N_DOMAIN>을 실제 도메인으로 변경
+n8n:
+  webhookUrl: "https://<N8N_DOMAIN>/"

@@ -1,0 +1,17 @@
+apiVersion: v2
+name: n8n
+description: n8n 워크플로우 자동화 플랫폼 - QTS 모니터링 및 범용 자동화 허브
+type: application
+version: 0.1.0
+appVersion: "latest"
+maintainers:
+  - name: tawbury
+    email: n8n@tawbury.com
+keywords:
+  - n8n
+  - automation
+  - workflow
+  - monitoring
+home: https://github.com/tawbury/Deployment
+sources:
+  - https://github.com/tawbury/Deployment

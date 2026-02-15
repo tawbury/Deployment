@@ -1,0 +1,71 @@
+# n8n Deployment
+# 단일 레플리카 (n8n은 내장 SQLite 사용 시 멀티 레플리카 미지원)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "n8n.fullname" . }}
+  namespace: {{ include "n8n.namespace" . }}
+  labels:
+    {{- include "n8n.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      {{- include "n8n.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "n8n.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: n8n
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: 5678
+              protocol: TCP
+          envFrom:
+            - configMapRef:
+                name: {{ include "n8n.fullname" . }}-config
+            - secretRef:
+                name: {{ include "n8n.fullname" . }}-secret
+          {{- if .Values.persistence.enabled }}
+          volumeMounts:
+            - name: n8n-data
+              mountPath: /home/node/.n8n
+          {{- end }}
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 5678
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 5678
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+      {{- if .Values.persistence.enabled }}
+      volumes:
+        - name: n8n-data
+          persistentVolumeClaim:
+            claimName: {{ include "n8n.fullname" . }}-data
+      {{- end }}

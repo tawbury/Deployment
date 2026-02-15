@@ -1,0 +1,33 @@
+# clusters/oci-2/n8n/helm-charts/values.gcp.yaml
+# ============================================================
+# GCP e2-micro 스테이징 환경 오버라이드
+# ============================================================
+# 환경 특성:
+#   - GCP e2-micro (vCPU 0.25, RAM 1GB)
+#   - 스왑 필수: sudo fallocate -l 1G /swapfile && sudo mkswap /swapfile && sudo swapon /swapfile
+#   - 용도: n8n 임시 스테이징, 향후 헬스체크 백업 전용
+#   - 주의: 리소스가 매우 제한적이므로 복잡한 워크플로우 실행 시 OOM 위험
+# ============================================================
+
+# 리소스 제한 (1GB RAM 머신에 맞춤)
+resources:
+  requests:
+    cpu: 100m
+    memory: 200Mi
+  limits:
+    cpu: 250m
+    memory: 450Mi
+
+# 스토리지 (최소한으로)
+persistence:
+  size: 5Gi
+
+# TODO: <GCP_EXTERNAL_IP>를 실제 GCP 인스턴스 외부 IP로 변경
+n8n:
+  webhookUrl: "http://<GCP_EXTERNAL_IP>:5678/"
+
+# NodePort로 직접 노출 (Ingress 없이)
+service:
+  type: NodePort
+  port: 5678
+  nodePort: 30678

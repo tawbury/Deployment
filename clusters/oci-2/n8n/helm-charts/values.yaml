@@ -1,0 +1,82 @@
+# clusters/oci-2/n8n/helm-charts/values.yaml
+# ============================================================
+# n8n Helm Chart - 공통 기본값 (Source of Truth)
+# ============================================================
+# 이 파일은 모든 환경에서 공유하는 기본 설정입니다.
+# 환경별 오버라이드: values.gcp.yaml (스테이징), values.oci.yaml (운영)
+# ============================================================
+
+# ------------------------------------------------------------
+# 1. Image Configuration
+# ------------------------------------------------------------
+# TODO: <GITHUB_USERNAME>을 실제 GitHub 사용자명으로 변경
+image:
+  repository: ghcr.io/<GITHUB_USERNAME>/n8n-custom
+  tag: latest
+  pullPolicy: Always
+
+imagePullSecrets:
+  - name: ghcr-secret
+
+# ------------------------------------------------------------
+# 2. n8n Application Settings
+# ------------------------------------------------------------
+n8n:
+  # 보안: 반드시 환경별로 --set n8n.encryptionKey=<KEY> 로 주입
+  encryptionKey: ""
+  timezone: Asia/Seoul
+  defaultLocale: ko
+  logLevel: info
+  metrics: true
+  runnersEnabled: true
+  # TODO: 환경별 values 파일에서 오버라이드
+  webhookUrl: ""
+
+# ------------------------------------------------------------
+# 3. Service
+# ------------------------------------------------------------
+service:
+  type: ClusterIP
+  port: 5678
+  # NodePort 사용 시에만 설정 (values.gcp.yaml 참조)
+  nodePort: ""
+
+# ------------------------------------------------------------
+# 4. Persistence
+# ------------------------------------------------------------
+persistence:
+  enabled: true
+  size: 10Gi
+  storageClass: ""
+  accessMode: ReadWriteOnce
+
+# ------------------------------------------------------------
+# 5. Resources
+# ------------------------------------------------------------
+resources:
+  requests:
+    cpu: 100m
+    memory: 256Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi
+
+# ------------------------------------------------------------
+# 6. Ingress
+# ------------------------------------------------------------
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+  host: ""
+  tls: []
+
+# ------------------------------------------------------------
+# 7. Node Selector
+# ------------------------------------------------------------
+nodeSelector: {}
+
+# ------------------------------------------------------------
+# 8. Replicas (n8n은 멀티 레플리카 미지원)
+# ------------------------------------------------------------
+replicaCount: 1

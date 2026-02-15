@@ -1,0 +1,203 @@
+# 비상 수동 배포 워크플로우
+# ============================================================
+# ArgoCD 없이 SSH로 직접 n8n을 배포/롤백/재시작
+# 트리거: workflow_dispatch (수동)만 지원
+# ============================================================
+# 필요한 GitHub Secrets:
+#   GCP Environment:
+#     - GCP_SSH_KEY: GCP 서버 SSH 개인키
+#     - GCP_HOST: GCP 서버 호스트 (IP 또는 도메인)
+#     - GCP_USER: GCP SSH 사용자명
+#   OCI2 Environment:
+#     - OCI2_SSH_KEY: OCI #2 서버 SSH 개인키
+#     - OCI2_HOST: OCI #2 서버 호스트 (IP 또는 도메인)
+#     - OCI2_USER: OCI #2 SSH 사용자명
+#   공통:
+#     - N8N_ENCRYPTION_KEY: n8n 암호화 키
+# ============================================================
+
+name: Emergency Deploy (n8n)
+
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: "배포 대상 서버"
+        required: true
+        type: choice
+        options:
+          - oci-2
+          - gcp
+      action:
+        description: "배포 액션"
+        required: true
+        type: choice
+        options:
+          - deploy
+          - rollback
+          - restart
+
+jobs:
+  deploy:
+    name: "${{ inputs.action }} n8n → ${{ inputs.target }}"
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.target == 'oci-2' && 'OCI2' || 'GCP' }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: 'v3.16.0'
+
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+
+          if [ "${{ inputs.target }}" = "oci-2" ]; then
+            echo "${{ secrets.OCI2_SSH_KEY }}" > ~/.ssh/id_rsa
+            SSH_HOST="${{ secrets.OCI2_HOST }}"
+          else
+            echo "${{ secrets.GCP_SSH_KEY }}" > ~/.ssh/id_rsa
+            SSH_HOST="${{ secrets.GCP_HOST }}"
+          fi
+
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H "$SSH_HOST" >> ~/.ssh/known_hosts 2>/dev/null
+
+      - name: Set connection variables
+        id: conn
+        run: |
+          if [ "${{ inputs.target }}" = "oci-2" ]; then
+            echo "ssh_user=${{ secrets.OCI2_USER }}" >> "$GITHUB_OUTPUT"
+            echo "ssh_host=${{ secrets.OCI2_HOST }}" >> "$GITHUB_OUTPUT"
+            echo "values_file=values.oci.yaml" >> "$GITHUB_OUTPUT"
+          else
+            echo "ssh_user=${{ secrets.GCP_USER }}" >> "$GITHUB_OUTPUT"
+            echo "ssh_host=${{ secrets.GCP_HOST }}" >> "$GITHUB_OUTPUT"
+            echo "values_file=values.gcp.yaml" >> "$GITHUB_OUTPUT"
+          fi
+
+      # ============================================================
+      # 배포 전 백업
+      # ============================================================
+      - name: Backup current state
+        if: inputs.action == 'deploy'
+        run: |
+          ssh -i ~/.ssh/id_rsa ${{ steps.conn.outputs.ssh_user }}@${{ steps.conn.outputs.ssh_host }} bash -s << 'BACKUP_SCRIPT'
+            echo "=== 현재 n8n 배포 상태 백업 ==="
+            BACKUP_DIR="/tmp/n8n-backup-$(date +%Y%m%d-%H%M%S)"
+            mkdir -p "$BACKUP_DIR"
+
+            # Helm release 정보 백업
+            if helm status n8n -n n8n &>/dev/null; then
+              helm get values n8n -n n8n > "$BACKUP_DIR/values-backup.yaml" 2>/dev/null
+              helm get manifest n8n -n n8n > "$BACKUP_DIR/manifest-backup.yaml" 2>/dev/null
+              echo "백업 완료: $BACKUP_DIR"
+              ls -la "$BACKUP_DIR"
+            else
+              echo "기존 n8n 릴리스 없음 (신규 배포)"
+            fi
+          BACKUP_SCRIPT
+
+      # ============================================================
+      # 액션 실행
+      # ============================================================
+      - name: "Execute: deploy"
+        if: inputs.action == 'deploy'
+        run: |
+          # 로컬에서 Helm Chart를 패키징하여 원격 서버로 전송 후 설치
+          CHART_PATH="clusters/oci-2/n8n/helm-charts"
+          VALUES_FILE="${{ steps.conn.outputs.values_file }}"
+
+          # Chart 패키징
+          helm package "$CHART_PATH" --destination /tmp/
+
+          # 원격 서버로 Chart + values 파일 전송
+          scp -i ~/.ssh/id_rsa /tmp/n8n-*.tgz \
+            ${{ steps.conn.outputs.ssh_user }}@${{ steps.conn.outputs.ssh_host }}:/tmp/n8n-chart.tgz
+          scp -i ~/.ssh/id_rsa "$CHART_PATH/values.yaml" "$CHART_PATH/$VALUES_FILE" \
+            ${{ steps.conn.outputs.ssh_user }}@${{ steps.conn.outputs.ssh_host }}:/tmp/
+
+          # 원격 서버에서 helm upgrade --install 실행
+          ssh -i ~/.ssh/id_rsa ${{ steps.conn.outputs.ssh_user }}@${{ steps.conn.outputs.ssh_host }} bash -s << DEPLOY_SCRIPT
+            echo "=== n8n 배포 시작 (${{ inputs.target }}) ==="
+
+            helm upgrade --install n8n /tmp/n8n-chart.tgz \
+              -n n8n --create-namespace \
+              -f /tmp/values.yaml \
+              -f /tmp/$VALUES_FILE \
+              --set n8n.encryptionKey="${{ secrets.N8N_ENCRYPTION_KEY }}" \
+              --wait --timeout 5m
+
+            echo "=== 배포 완료 ==="
+            helm status n8n -n n8n
+          DEPLOY_SCRIPT
+
+      - name: "Execute: rollback"
+        if: inputs.action == 'rollback'
+        run: |
+          ssh -i ~/.ssh/id_rsa ${{ steps.conn.outputs.ssh_user }}@${{ steps.conn.outputs.ssh_host }} bash -s << 'ROLLBACK_SCRIPT'
+            echo "=== n8n 롤백 시작 ==="
+
+            # 이전 릴리스로 롤백
+            if helm history n8n -n n8n &>/dev/null; then
+              helm rollback n8n -n n8n --wait --timeout 3m
+              echo "=== 롤백 완료 ==="
+              helm status n8n -n n8n
+            else
+              echo "::error::n8n 릴리스 이력이 없어 롤백 불가"
+              exit 1
+            fi
+          ROLLBACK_SCRIPT
+
+      - name: "Execute: restart"
+        if: inputs.action == 'restart'
+        run: |
+          ssh -i ~/.ssh/id_rsa ${{ steps.conn.outputs.ssh_user }}@${{ steps.conn.outputs.ssh_host }} bash -s << 'RESTART_SCRIPT'
+            echo "=== n8n Pod 재시작 ==="
+            kubectl rollout restart deployment/n8n -n n8n
+            kubectl rollout status deployment/n8n -n n8n --timeout=3m
+            echo "=== 재시작 완료 ==="
+          RESTART_SCRIPT
+
+      # ============================================================
+      # 배포 후 헬스체크
+      # ============================================================
+      - name: Health check
+        if: always()
+        run: |
+          ssh -i ~/.ssh/id_rsa ${{ steps.conn.outputs.ssh_user }}@${{ steps.conn.outputs.ssh_host }} bash -s << 'HEALTH_SCRIPT'
+            echo "=== 헬스체크 시작 ==="
+
+            # Pod 상태 확인
+            kubectl get pods -n n8n -o wide
+            echo ""
+
+            # 헬스체크 엔드포인트 확인 (최대 5회 재시도)
+            for i in $(seq 1 5); do
+              if curl -sf http://localhost:5678/healthz -o /dev/null 2>/dev/null; then
+                echo "헬스체크 성공 (시도 $i/5)"
+                exit 0
+              fi
+              echo "헬스체크 대기 중... ($i/5)"
+              sleep 10
+            done
+
+            echo "::warning::헬스체크 실패 - Pod 로그 확인 필요"
+            kubectl logs -n n8n -l app.kubernetes.io/name=n8n --tail=20 2>/dev/null || true
+          HEALTH_SCRIPT
+
+      - name: Summary
+        if: always()
+        run: |
+          echo "### Emergency Deploy Summary" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Item | Value |" >> "$GITHUB_STEP_SUMMARY"
+          echo "|------|-------|" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Target | ${{ inputs.target }} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Action | ${{ inputs.action }} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Trigger | ${{ github.actor }} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Time | $(date -u '+%Y-%m-%d %H:%M:%S UTC') |" >> "$GITHUB_STEP_SUMMARY"
