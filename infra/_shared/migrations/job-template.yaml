@@ -26,7 +26,7 @@ spec:
             - |
               set -e
               export PGHOST="${PGHOST}" PGPORT="${PGPORT}" PGDATABASE="${PGDATABASE}" PGUSER="${PGUSER}" PGPASSWORD="${PGPASSWORD}"
-              for f in 001_create_scalp_tables.sql 002_create_swing_tables.sql 003_create_portfolio_tables.sql 004_create_analysis_tables.sql; do
+              for f in 001_create_scalp_tables.sql 002_create_swing_tables.sql 003_create_portfolio_tables.sql 004_create_analysis_tables.sql 005_create_trading_tables.sql; do
                 [ -f "/migrations/$f" ] || continue
                 echo "Running $f ..."
                 psql -v ON_ERROR_STOP=1 -f "/migrations/$f"
@@ -50,4 +50,5 @@ spec:
 #   --from-file=002_create_swing_tables.sql=infra/_shared/migrations/002_create_swing_tables.sql \
 #   --from-file=003_create_portfolio_tables.sql=infra/_shared/migrations/003_create_portfolio_tables.sql \
 #   --from-file=004_create_analysis_tables.sql=infra/_shared/migrations/004_create_analysis_tables.sql \
+#   --from-file=005_create_trading_tables.sql=infra/_shared/migrations/005_create_trading_tables.sql \
 #   -n observer

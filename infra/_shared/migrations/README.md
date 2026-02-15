@@ -11,6 +11,7 @@ Observer/QTS 등 앱에서 사용하는 DB 스키마 마이그레이션 SQL과 K
      --from-file=002_create_swing_tables.sql=002_create_swing_tables.sql \
      --from-file=003_create_portfolio_tables.sql=003_create_portfolio_tables.sql \
      --from-file=004_create_analysis_tables.sql=004_create_analysis_tables.sql \
+     --from-file=005_create_trading_tables.sql=005_create_trading_tables.sql \
      -n observer
    ```
    (위는 `infra/_shared/migrations/` 디렉터리에서 실행)
