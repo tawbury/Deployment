@@ -3,7 +3,6 @@
 # OCI #2 서버에 n8n 워크플로우 자동화 플랫폼을 배포
 # 감시자(n8n)와 감시 대상(QTS/Observer)은 별도 서버에서 운영
 # ============================================================
-# TODO: <GITHUB_USERNAME>을 실제 GitHub 사용자명으로 변경
 # TODO: <OCI_2_K3S_API_주소>를 OCI #2의 K3s API 서버 주소로 변경
 #       (argocd cluster add 명령으로 멀티 클러스터 등록 후 설정)
 # ============================================================
@@ -20,8 +19,7 @@ spec:
   project: default
 
   source:
-    # TODO: <GITHUB_USERNAME>을 실제 GitHub 사용자명으로 변경
-    repoURL: https://github.com/<GITHUB_USERNAME>/Deployment.git
+    repoURL: https://github.com/tawbury/Deployment.git
     targetRevision: main
     path: clusters/oci-2/n8n/helm-charts
     helm:

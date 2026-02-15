@@ -9,9 +9,8 @@
 # ------------------------------------------------------------
 # 1. Image Configuration
 # ------------------------------------------------------------
-# TODO: <GITHUB_USERNAME>을 실제 GitHub 사용자명으로 변경
 image:
-  repository: ghcr.io/<GITHUB_USERNAME>/n8n-custom
+  repository: ghcr.io/tawbury/n8n-custom
   tag: latest
   pullPolicy: Always
 

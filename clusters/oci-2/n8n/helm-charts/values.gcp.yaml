@@ -22,9 +22,8 @@ resources:
 persistence:
   size: 5Gi
 
-# TODO: <GCP_EXTERNAL_IP>를 실제 GCP 인스턴스 외부 IP로 변경
 n8n:
-  webhookUrl: "http://<GCP_EXTERNAL_IP>:5678/"
+  webhookUrl: "http://35.188.115.86/:5678/"
 
 # NodePort로 직접 노출 (Ingress 없이)
 service:
